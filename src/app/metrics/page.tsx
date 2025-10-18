@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { AppHeader } from '../../components/AppHeader';
+import { Card, Button, Badge } from '../../components/ui';
 
 interface TelemetryEvent {
   t: number;
@@ -74,58 +77,49 @@ export default function MetricsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-[#2D9A86] text-white p-4 shadow-sm">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">Метрики Zaman AI</h1>
-            <button
-              onClick={clearMetrics}
-              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
-            >
-              Очистить события
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-z-cloud">
+      <AppHeader title="Метрики Zaman AI" />
 
-      {/* Navigation */}
-      <nav className="bg-gray-50 border-b p-4">
-        <div className="max-w-6xl mx-auto flex space-x-4">
-          <Link href="/chat" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Чат
-          </Link>
-          <Link href="/home" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Мой банк
-          </Link>
-          <Link href="/spending" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Анализ расходов
-          </Link>
-          <Link href="/products" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Каталог
-          </Link>
-          <span className="text-gray-600 font-medium">Метрики</span>
-        </div>
-      </nav>
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto p-6">
         {/* Summary */}
-        <div className="bg-[#EEFE6D] rounded-xl p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-2">Общая статистика</h2>
-          <p className="text-gray-700">
-            Всего событий: <span className="font-bold text-[#2D9A86]">{totalEvents}</span>
-          </p>
-          <p className="text-gray-700">
-            Уникальных типов событий: <span className="font-bold text-[#2D9A86]">{Object.keys(metrics).length}</span>
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <Card className="p-5 md:p-6 mb-6 bg-[var(--z-solar)]/50">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg md:text-xl font-semibold text-z-ink">Общая статистика</h2>
+              <Button variant="ghost" onClick={clearMetrics} size="sm">
+                Очистить события
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-z-ink-2">
+                  Всего событий: <span className="font-bold text-[var(--z-green)]">{totalEvents}</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-z-ink-2">
+                  Уникальных типов событий: <span className="font-bold text-[var(--z-green)]">{Object.keys(metrics).length}</span>
+                </p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
         {/* SVG Bar Chart */}
         {Object.keys(metrics).length > 0 && (
-          <div className="bg-white border rounded-xl p-6 mb-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">График событий</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.1 }}
+          >
+            <Card className="p-5 md:p-6 mb-6">
+              <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">График событий</h2>
             <div className="w-full h-64">
               <svg width="100%" height="100%" viewBox="0 0 800 200" className="overflow-visible">
                 {/* Y-axis */}
@@ -193,16 +187,28 @@ export default function MetricsPage() {
                 <line x1="50" y1="180" x2="750" y2="180" stroke="#e5e7eb" strokeWidth="2"/>
               </svg>
             </div>
-          </div>
+            </Card>
+          </motion.div>
         )}
 
         {/* Event Types */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Object.entries(metrics).map(([eventType, stats]) => (
-            <div key={eventType} className="bg-white border rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-800 mb-3 capitalize">
-                {eventType.replace(/_/g, ' ')}
-              </h3>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {Object.entries(metrics).map(([eventType, stats], index) => (
+            <motion.div
+              key={eventType}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.2 + index * 0.1 }}
+            >
+              <Card className="p-4">
+                <h3 className="font-semibold text-z-ink mb-3 capitalize">
+                  {eventType.replace(/_/g, ' ')}
+                </h3>
               
               {/* Count */}
               <div className="text-2xl font-bold text-[#2D9A86] mb-2">
