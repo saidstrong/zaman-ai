@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AppHeader } from '../../components/AppHeader';
-import { Card, Button, Badge } from '../../components/ui';
+import { Card, Button } from '../../components/ui';
 
 interface TelemetryEvent {
   t: number;
@@ -245,6 +245,7 @@ export default function MetricsPage() {
                     )}
                   </div>
                 ))}
+              </div>
               </Card>
             </motion.div>
           ))}

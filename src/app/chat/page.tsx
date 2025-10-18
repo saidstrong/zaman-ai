@@ -2,13 +2,12 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { planGoal } from '../../lib/utils';
 import { track } from '../../lib/telemetry';
 import { extractGoal } from '../../lib/nlu';
 import { AppHeader } from '../../components/AppHeader';
-import { Card, Button, Badge } from '../../components/ui';
+import { Card, Button } from '../../components/ui';
 
 interface Message {
   role: 'user' | 'assistant';

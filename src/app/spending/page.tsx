@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import Papa from 'papaparse';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { analyzeSpending, Transaction, SpendingAnalysis } from '../../lib/spending-analysis';
 import { AppHeader } from '../../components/AppHeader';
-import { Card, Button, Badge, Stat } from '../../components/ui';
+import { Card } from '../../components/ui';
 
 export default function SpendingPage() {
   const [analysis, setAnalysis] = useState<SpendingAnalysis | null>(null);

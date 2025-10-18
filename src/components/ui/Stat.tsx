@@ -1,4 +1,3 @@
-import { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
 interface StatProps {

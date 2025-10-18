@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { track } from '../../lib/telemetry';

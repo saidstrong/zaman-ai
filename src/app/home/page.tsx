@@ -8,7 +8,7 @@ import { track } from '../../lib/telemetry';
 import ConfirmModal from '../../components/ConfirmModal';
 import { VoiceController } from '../../lib/voice';
 import { AppHeader } from '../../components/AppHeader';
-import { Card, Button, Badge, Stat, Progress, Pill } from '../../components/ui';
+import { Card, Button, Stat, Progress, Pill } from '../../components/ui';
 
 export default function HomePage() {
   const [userAccounts, setUserAccounts] = useState<Account[]>(accounts);
@@ -380,6 +380,7 @@ export default function HomePage() {
                 </Button>
               </div>
             )}
+            </div>
           </Card>
         </motion.div>
 
