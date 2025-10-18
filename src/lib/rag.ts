@@ -46,9 +46,10 @@ function cosine(a: number[], b: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-// Generate embeddings for texts (server-side)
-export async function embedTexts(texts: string[]): Promise<number[][]> {
+// Generate embeddings for texts using /api/embeddings
+export async function embed(texts: string[]): Promise<number[][]> {
   try {
+    // For server-side calls, we need to use the full URL or call the external API directly
     const baseUrl = process.env.ZAMAN_BASE_URL;
     const apiKey = process.env.ZAMAN_API_KEY;
     
@@ -88,7 +89,7 @@ async function loadEmbeddings(): Promise<{ texts: string[], vectors: number[][] 
   
   try {
     // Try to load from cache
-    const response = await fetch('/embeds.json');
+    const response = await fetch('/rag_cache.json');
     if (response.ok) {
       const cached = await response.json();
       if (cached.texts && cached.vectors && 
@@ -103,7 +104,7 @@ async function loadEmbeddings(): Promise<{ texts: string[], vectors: number[][] 
   
   try {
     // Generate new embeddings
-    const vectors = await embedTexts(DOCS);
+    const vectors = await embed(DOCS);
     const embeddings = { texts: DOCS, vectors };
     
     // Cache embeddings (this would be done server-side in production)
@@ -121,7 +122,7 @@ export async function search(query: string, k: number = 3): Promise<string[]> {
     const { texts, vectors } = await loadEmbeddings();
     
     // Embed the query
-    const queryVector = await embedTexts([query]);
+    const queryVector = await embed([query]);
     const queryEmbedding = queryVector[0];
     
     // Calculate similarities
