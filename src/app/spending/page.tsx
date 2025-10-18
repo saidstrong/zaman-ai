@@ -137,12 +137,21 @@ export default function SpendingPage() {
       <header className="bg-[#2D9A86] text-white p-4 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">Анализ расходов</h1>
-          <Link 
-            href="/" 
-            className="text-white hover:text-[#EEFE6D] transition-colors flex items-center space-x-1"
-          >
-            <span>← В чат</span>
-          </Link>
+          <div className="flex space-x-4">
+            <Link href="/chat" className="text-white hover:text-[#EEFE6D] transition-colors">
+              Чат
+            </Link>
+            <Link href="/home" className="text-white hover:text-[#EEFE6D] transition-colors">
+              Мой банк
+            </Link>
+            <span className="text-[#EEFE6D]">Анализ расходов</span>
+            <Link href="/products" className="text-white hover:text-[#EEFE6D] transition-colors">
+              Каталог
+            </Link>
+            <Link href="/metrics" className="text-white hover:text-[#EEFE6D] transition-colors">
+              Метрики
+            </Link>
+          </div>
         </div>
       </header>
 

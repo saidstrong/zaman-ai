@@ -260,13 +260,19 @@ function ProductsPageComponent() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">Каталог продуктов Zaman Bank</h1>
           <div className="flex space-x-4">
-            <Link href="/" className="hover:text-[#EEFE6D] transition-colors">
-              ← В чат
+            <Link href="/chat" className="hover:text-[#EEFE6D] transition-colors">
+              Чат
+            </Link>
+            <Link href="/home" className="hover:text-[#EEFE6D] transition-colors">
+              Мой банк
             </Link>
             <Link href="/spending" className="hover:text-[#EEFE6D] transition-colors">
               Анализ расходов
             </Link>
-            <span className="text-[#EEFE6D]">Каталог продуктов</span>
+            <span className="text-[#EEFE6D]">Каталог</span>
+            <Link href="/metrics" className="hover:text-[#EEFE6D] transition-colors">
+              Метрики
+            </Link>
           </div>
         </div>
       </nav>

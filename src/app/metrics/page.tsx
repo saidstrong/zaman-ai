@@ -93,14 +93,17 @@ export default function MetricsPage() {
       {/* Navigation */}
       <nav className="bg-gray-50 border-b p-4">
         <div className="max-w-6xl mx-auto flex space-x-4">
-          <Link href="/" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            ← В чат
+          <Link href="/chat" className="text-[#2D9A86] hover:text-[#248076] font-medium">
+            Чат
+          </Link>
+          <Link href="/home" className="text-[#2D9A86] hover:text-[#248076] font-medium">
+            Мой банк
           </Link>
           <Link href="/spending" className="text-[#2D9A86] hover:text-[#248076] font-medium">
             Анализ расходов
           </Link>
           <Link href="/products" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Каталог продуктов
+            Каталог
           </Link>
           <span className="text-gray-600 font-medium">Метрики</span>
         </div>
