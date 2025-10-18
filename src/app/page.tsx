@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { planGoal } from '../lib/utils';
 import { track } from '../lib/telemetry';
+import { extractGoal } from '../lib/nlu';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -137,6 +138,39 @@ function ChatComponent() {
     setInput('');
     setIsLoading(true);
     setError(null);
+
+    // Local goal extraction - skip LLM if we can extract goal directly
+    const goal = extractGoal(input);
+    if (goal && (goal.months || goal.dateISO)) {
+      // compute targetDate from months if provided
+      let targetDate = goal.dateISO;
+      if (!targetDate && goal.months) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + goal.months);
+        targetDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+      }
+      
+      const res = planGoal(goal.amount, targetDate!);
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: `План накоплений: ${res.monthly.toLocaleString()} ₸/мес, срок: ${res.months} мес`,
+        isGoalPlan: true,
+        goalData: { targetAmount: goal.amount, targetDate: targetDate!, ...res }
+      };
+      setMessages([...newMessages, assistantMessage]);
+      
+      // Track goal creation
+      track('goal_created', { 
+        sum: goal.amount, 
+        dateISO: targetDate!,
+        monthly: res.monthly,
+        months: res.months
+      });
+      
+      setIsLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
+      return; // skip calling LLM
+    }
 
     try {
       const response = await fetch('/api/chat', {

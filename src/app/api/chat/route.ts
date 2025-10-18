@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const req = await request.json();
     const userMessages = Array.isArray(req?.messages) ? req.messages : [];
-    const temperature = typeof req?.temperature === 'number' ? req.temperature : 0.2;
+    const temperature = typeof req?.temperature === 'number' ? req.temperature : 0.1;
 
     // Get RAG context for Islamic finance terms
     let ragContext = '';
@@ -38,6 +38,23 @@ Be concise, friendly, and align with halal principles. Never mention interest; u
         ragContext +
         `
 
+If the user intent is a saving goal (накопить/цель/квартира/авто/образование/путешествие),
+do NOT explain, do NOT ask more than ONE clarifying question.
+If enough info is provided (amount and horizon/date), respond ONLY with JSON:
+
+{"tool":"plan_goal","targetAmount":<number>,"targetDate":"YYYY-MM-DD"}
+
+If amount or horizon is missing, ask ONE short question and stop.
+Examples:
+User: "цель квартира 20 млн за 3 года"
+Assistant: {"tool":"plan_goal","targetAmount":20000000,"targetDate":"2028-10-01"}
+
+User: "план копить на квартиру двадцать миллионов за 3 года"
+Assistant: {"tool":"plan_goal","targetAmount":20000000,"targetDate":"2028-10-01"}
+
+User: "накопить на квартиру"
+Assistant: "Какую сумму хотите накопить и к какой дате?"
+
 When the user asks to find/pick/recommend a product (вклад, мурабаха, карта, кредит и т.п.),
 respond ONLY with valid JSON (no extra text):
 
@@ -54,13 +71,6 @@ Assistant: {"tool":"match_product","type":"мурабаха","minAmount":1000000
 
 User: "вклад 50 000"
 Assistant: {"tool":"match_product","type":"вклад","minAmount":50000,"query":""}
-
-For financial planning goals (like "накопить 1 млн к 2025 году"), respond ONLY with valid JSON:
-{
-  "tool": "plan_goal",
-  "targetAmount": <число>,
-  "targetDate": "YYYY-MM-DD"
-}
 
 For all non-product questions, reply in natural text.
 If amount is unclear, ask ONE short clarifying question.
