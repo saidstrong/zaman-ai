@@ -17,8 +17,10 @@ interface EventStats {
 export default function MetricsPage() {
   const [metrics, setMetrics] = useState<Record<string, EventStats>>({});
   const [totalEvents, setTotalEvents] = useState(0);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     loadMetrics();
   }, []);
 
@@ -59,6 +61,18 @@ export default function MetricsPage() {
 
   const maxCount = Math.max(...Object.values(metrics).map(stats => stats.count));
 
+  // SSR Safety Guard
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2D9A86] mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -86,7 +100,7 @@ export default function MetricsPage() {
             Анализ расходов
           </Link>
           <Link href="/products" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Каталог
+            Каталог продуктов
           </Link>
           <span className="text-gray-600 font-medium">Метрики</span>
         </div>
@@ -104,6 +118,80 @@ export default function MetricsPage() {
             Уникальных типов событий: <span className="font-bold text-[#2D9A86]">{Object.keys(metrics).length}</span>
           </p>
         </div>
+
+        {/* SVG Bar Chart */}
+        {Object.keys(metrics).length > 0 && (
+          <div className="bg-white border rounded-xl p-6 mb-6 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4">График событий</h2>
+            <div className="w-full h-64">
+              <svg width="100%" height="100%" viewBox="0 0 800 200" className="overflow-visible">
+                {/* Y-axis */}
+                <line x1="50" y1="20" x2="50" y2="180" stroke="#e5e7eb" strokeWidth="2"/>
+                
+                {/* Y-axis labels */}
+                {Array.from({ length: 6 }, (_, i) => {
+                  const value = Math.round((maxCount / 5) * i);
+                  const y = 180 - (i * 32);
+                  return (
+                    <g key={i}>
+                      <text x="45" y={y + 5} textAnchor="end" className="text-xs fill-gray-600">
+                        {value}
+                      </text>
+                      <line x1="48" y1={y} x2="52" y2={y} stroke="#e5e7eb" strokeWidth="1"/>
+                    </g>
+                  );
+                })}
+                
+                {/* Bars */}
+                {Object.entries(metrics).map(([eventType, stats], index) => {
+                  const barWidth = 60;
+                  const barSpacing = 80;
+                  const x = 70 + (index * barSpacing);
+                  const height = (stats.count / maxCount) * 160;
+                  const y = 180 - height;
+                  
+                  return (
+                    <g key={eventType}>
+                      {/* Bar */}
+                      <rect
+                        x={x}
+                        y={y}
+                        width={barWidth}
+                        height={height}
+                        fill="#2D9A86"
+                        rx="4"
+                      />
+                      
+                      {/* Value label on top of bar */}
+                      <text
+                        x={x + barWidth / 2}
+                        y={y - 5}
+                        textAnchor="middle"
+                        className="text-xs fill-gray-700 font-medium"
+                      >
+                        {stats.count}
+                      </text>
+                      
+                      {/* Event name below bar */}
+                      <text
+                        x={x + barWidth / 2}
+                        y="195"
+                        textAnchor="middle"
+                        className="text-xs fill-gray-600"
+                        transform={`rotate(-45 ${x + barWidth / 2} 195)`}
+                      >
+                        {eventType.replace(/_/g, ' ')}
+                      </text>
+                    </g>
+                  );
+                })}
+                
+                {/* X-axis */}
+                <line x1="50" y1="180" x2="750" y2="180" stroke="#e5e7eb" strokeWidth="2"/>
+              </svg>
+            </div>
+          </div>
+        )}
 
         {/* Event Types */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -132,17 +220,19 @@ export default function MetricsPage() {
               </div>
               <div className="space-y-1 mt-1">
                 {stats.events.slice(-5).map((event, index) => (
-                  <div key={index} className="text-xs text-gray-500 truncate">
-                    {new Date(event.t).toLocaleString('ru-RU', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                  <div key={index} className="text-xs text-gray-500">
+                    <div className="font-mono">
+                      {new Date(event.t).toLocaleTimeString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </div>
                     {event.payload && Object.keys(event.payload).length > 0 && (
-                      <span className="ml-2 text-gray-400">
-                        ({Object.keys(event.payload).join(', ')})
-                      </span>
+                      <div className="text-gray-400 truncate mt-1">
+                        {JSON.stringify(event.payload).substring(0, 50)}
+                        {JSON.stringify(event.payload).length > 50 && '...'}
+                      </div>
                     )}
                   </div>
                 ))}
