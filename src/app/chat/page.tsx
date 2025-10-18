@@ -3,9 +3,12 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { planGoal } from '../../lib/utils';
 import { track } from '../../lib/telemetry';
 import { extractGoal } from '../../lib/nlu';
+import { AppHeader } from '../../components/AppHeader';
+import { Card, Button, Badge } from '../../components/ui';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -325,66 +328,35 @@ function ChatComponent() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <header className="bg-[#2D9A86] text-white p-4 shadow-sm">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-xl font-semibold">Zaman AI Chat</h1>
-              {process.env.NEXT_PUBLIC_DEMO_MODE === '1' && (
-                <span className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium">
-                  DEMO
-                </span>
-              )}
-            </div>
-            <button
-              onClick={toggleTts}
-              title="Озвучивать ответы ассистента"
-              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-                ttsEnabled 
-                  ? 'bg-[#EEFE6D] text-[#2D9A86]' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-            >
-              {ttsEnabled ? '🔊 Озвучка' : '🔇 Озвучка'}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation */}
-      <nav className="bg-gray-50 border-b p-4">
-        <div className="max-w-4xl mx-auto flex space-x-4">
-          <span className="text-[#2D9A86] font-medium">Чат</span>
-          <Link href="/home" className="text-gray-600 hover:text-[#2D9A86] font-medium">
-            Мой банк
-          </Link>
-          <Link href="/spending" className="text-gray-600 hover:text-[#2D9A86] font-medium">
-            Анализ расходов
-          </Link>
-          <Link href="/products" className="text-gray-600 hover:text-[#2D9A86] font-medium">
-            Каталог
-          </Link>
-          <Link href="/metrics" className="text-gray-600 hover:text-[#2D9A86] font-medium">
-            Метрики
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-z-cloud flex flex-col">
+      <AppHeader 
+        title="Zaman AI Chat"
+        showVoiceToggle={true}
+        voiceEnabled={ttsEnabled}
+        onToggleVoice={toggleTts}
+        showDemoBadge={process.env.NEXT_PUBLIC_DEMO_MODE === '1'}
+      />
 
       {/* Messages */}
       <main className="flex-1 max-w-4xl mx-auto w-full p-4 space-y-4">
         {messages.map((message, index) => (
-          <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
               message.role === 'user' 
-                ? 'bg-[#2D9A86] text-white' 
-                : 'bg-[#EEFE6D] text-gray-800'
+                ? 'bg-[var(--z-green)] text-white' 
+                : 'bg-[var(--z-solar)]/50 text-z-ink'
             }`}>
               <p className="text-sm leading-relaxed">{message.content}</p>
               {message.isGoalPlan && message.goalData && (
-                <div className="mt-2 pt-2 border-t border-gray-300">
-                  <button
+                <div className="mt-2 pt-2 border-t border-z-border">
+                  <Button
+                    size="sm"
                     onClick={() => {
                       track("goal_created", {
                         sum: message.goalData!.targetAmount,
@@ -394,48 +366,64 @@ function ChatComponent() {
                       });
                       alert('Цель зафиксирована!');
                     }}
-                    className="bg-[#2D9A86] text-white px-3 py-1 rounded text-sm hover:bg-[#248076] transition-colors"
                   >
                     Зафиксировать цель
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         ))}
 
         {/* Loading indicator */}
         {isRecording && (
-          <div className="flex justify-center">
-            <div className="bg-gray-100 rounded-2xl px-4 py-3">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="flex justify-center"
+          >
+            <Card className="p-4 bg-red-50 border-red-200">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <span className="text-red-600 text-sm ml-2">Записываю...</span>
               </div>
-            </div>
-          </div>
+            </Card>
+          </motion.div>
         )}
 
         {/* Skeleton Loader */}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-[#EEFE6D] rounded-2xl px-4 py-3 max-w-[80%]">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="flex justify-start"
+          >
+            <Card className="max-w-[80%] p-4 bg-[var(--z-solar)]/30">
               <div className="space-y-2">
-                <div className="h-3 bg-gray-300 rounded animate-pulse"></div>
-                <div className="h-3 bg-gray-300 rounded animate-pulse w-4/5"></div>
-                <div className="h-3 bg-gray-300 rounded animate-pulse w-3/5"></div>
+                <div className="h-3 bg-z-muted rounded animate-pulse"></div>
+                <div className="h-3 bg-z-muted rounded animate-pulse w-4/5"></div>
+                <div className="h-3 bg-z-muted rounded animate-pulse w-3/5"></div>
               </div>
-            </div>
-          </div>
+            </Card>
+          </motion.div>
         )}
 
         {error && (
-          <div className="flex justify-center">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg max-w-md">
-              <p className="text-sm mb-3">{error}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="flex justify-center"
+          >
+            <Card className="max-w-md p-4 bg-red-50 border-red-200">
+              <p className="text-sm mb-3 text-red-700">{error}</p>
               <div className="flex space-x-2">
-                <button
+                <Button
+                  size="sm"
                   onClick={() => {
                     setError(null);
                     if (messages.length > 0) {
@@ -445,65 +433,70 @@ function ChatComponent() {
                       }
                     }
                   }}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                  className="bg-red-500 hover:bg-red-600 text-white"
                 >
                   Повторить
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setError(null)}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
                 >
                   Закрыть
-                </button>
+                </Button>
               </div>
-            </div>
-        </div>
+            </Card>
+          </motion.div>
         )}
       </main>
 
       {/* Applied Product Confirmation */}
       {appliedProduct && (
-        <div className="bg-[#EEFE6D] border-t border-[#2D9A86] p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="bg-[var(--z-solar)]/20 border-t border-[var(--z-green)] p-4"
+        >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-sm text-gray-800 mb-3">
+            <Card className="p-4">
+              <p className="text-sm text-z-ink mb-3">
                 Вы выбрали: <strong>{appliedProduct.name}</strong> (тип: <strong>{appliedProduct.type}</strong>, 
                 мин: <strong>{appliedProduct.min.toLocaleString()} ₸</strong>, 
                 срок: <strong>{appliedProduct.term} мес</strong>). 
                 Я помогу оформить заявку или подобрать похожие варианты.
               </p>
               <div className="flex space-x-2">
-                <button
+                <Button
                   onClick={() => {
                     console.log("Оформить заявку", appliedProduct);
                     setAppliedProduct(null);
                   }}
-                  className="bg-[#2D9A86] text-white px-4 py-2 rounded-lg hover:bg-[#248076] transition-colors"
                 >
                   Оформить заявку
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={() => setAppliedProduct(null)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
                 >
-                  Закрыть
-                </button>
+                  Отмена
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Input */}
-      <div className="bg-white border-t p-4">
+      <div className="bg-white border-t border-z-border p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex space-x-3">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={isRecording ? stopRecording : startRecording}
-              className={`p-2 rounded-full transition-colors ${
-                isRecording 
-                  ? 'bg-red-500 text-white' 
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              className={`p-2 rounded-full ${
+                isRecording ? 'bg-red-500 text-white' : ''
               }`}
             >
               {isRecording ? (
@@ -515,7 +508,7 @@ function ChatComponent() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 2a6 6 0 00-6 6v4a6 6 0 1012 0V8a6 6 0 00-6-6z" clipRule="evenodd"/>
                 </svg>
               )}
-            </button>
+            </Button>
             <input
               ref={inputRef}
               type="text"
@@ -523,18 +516,19 @@ function ChatComponent() {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Введите ваше сообщение..."
-              className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
+              className="flex-1 border border-z-border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
               disabled={isLoading}
             />
-            <button
+            <Button
+              size="sm"
               onClick={sendMessage}
               disabled={!input.trim() || isLoading}
-              className="bg-[#2D9A86] text-white p-2 rounded-full hover:bg-[#248076] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 rounded-full"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
               </svg>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
