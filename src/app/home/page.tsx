@@ -380,8 +380,8 @@ export default function HomePage() {
                 </Button>
               </div>
             )}
-          </div>
-        </div>
+          </Card>
+        </motion.div>
 
         {/* Halal Investment */}
         <motion.div

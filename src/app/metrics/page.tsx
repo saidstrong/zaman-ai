@@ -245,10 +245,10 @@ export default function MetricsPage() {
                     )}
                   </div>
                 ))}
-              </div>
-            </div>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Business Insights */}
         {Object.keys(metrics).length > 0 && (
