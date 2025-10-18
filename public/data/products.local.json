@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "name": "Исламский вклад \"Халяль\"",
+    "type": "вклад",
+    "halalTags": ["халяль", "мудараба"],
+    "minAmount": 100000,
+    "termMonths": 12,
+    "link": "https://example.com/deposit"
+  },
+  {
+    "id": 2,
+    "name": "Мурабаха на недвижимость",
+    "type": "мурабаха",
+    "halalTags": ["халяль", "мурабаха"],
+    "minAmount": 5000000,
+    "termMonths": 60,
+    "link": "https://example.com/murabaha"
+  },
+  {
+    "id": 3,
+    "name": "Исламская карта \"Золотая\"",
+    "type": "карта",
+    "halalTags": ["халяль", "кафала"],
+    "minAmount": 0,
+    "termMonths": 0,
+    "link": "https://example.com/card"
+  },
+  {
+    "id": 4,
+    "name": "Лизинг автомобилей",
+    "type": "лизинг",
+    "halalTags": ["халяль", "иджара"],
+    "minAmount": 2000000,
+    "termMonths": 36,
+    "link": "https://example.com/leasing"
+  },
+  {
+    "id": 5,
+    "name": "Вклад \"Накопления\"",
+    "type": "вклад",
+    "halalTags": ["халяль", "мудараба"],
+    "minAmount": 50000,
+    "termMonths": 24,
+    "link": "https://example.com/savings"
+  }
+]

@@ -404,7 +404,14 @@ function ChatComponent() {
       <header className="bg-[#2D9A86] text-white p-4 shadow-sm">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold">Zaman AI Chat</h1>
+            <div className="flex items-center space-x-3">
+              <h1 className="text-xl font-semibold">Zaman AI Chat</h1>
+              {process.env.NEXT_PUBLIC_DEMO_MODE === '1' && (
+                <span className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium">
+                  DEMO
+                </span>
+              )}
+            </div>
             <button
               onClick={toggleTts}
               title="Озвучивать ответы ассистента"

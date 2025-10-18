@@ -74,8 +74,17 @@ function ProductsPageComponent() {
   // Load products data
   useEffect(() => {
     const loadProducts = async (): Promise<Product[]> => {
+      // Try main products file first
       const res = await fetch('/data/products.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error(`Failed to load products: ${res.status}`);
+      if (!res.ok) {
+        // Fallback to local demo products
+        console.log('Main products.json failed, using local fallback');
+        const fallbackRes = await fetch('/data/products.local.json', { cache: 'no-store' });
+        if (!fallbackRes.ok) throw new Error(`Failed to load fallback products: ${fallbackRes.status}`);
+        const fallbackData = await fallbackRes.json();
+        if (!Array.isArray(fallbackData)) throw new Error('Invalid fallback products format: expected an array');
+        return fallbackData;
+      }
       const data = await res.json();
       if (!Array.isArray(data)) throw new Error('Invalid products format: expected an array');
       return data;

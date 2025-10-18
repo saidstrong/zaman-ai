@@ -11,6 +11,69 @@ export async function POST(request: NextRequest) {
     const userMessages = Array.isArray(req?.messages) ? req.messages : [];
     const temperature = typeof req?.temperature === 'number' ? req.temperature : 0.1;
 
+    // DEMO_MODE fallback
+    if (process.env.DEMO_MODE === '1') {
+      const latestMessage = userMessages[userMessages.length - 1]?.content || '';
+      const messageLower = latestMessage.toLowerCase();
+      
+      // Demo responses for common queries
+      if (messageLower.includes('привет') || messageLower.includes('здравствуй')) {
+        return NextResponse.json({
+          choices: [{ message: { content: 'Привет! Я Zaman AI - ваш помощник по исламским финансам. Чем могу помочь?' } }]
+        });
+      }
+      
+      if (messageLower.includes('вклад') || messageLower.includes('депозит')) {
+        return NextResponse.json({
+          choices: [{ message: { content: '{"tool":"match_product","type":"вклад","minAmount":100000,"query":"вклад"}' } }]
+        });
+      }
+      
+      if (messageLower.includes('мурабаха') || messageLower.includes('кредит')) {
+        return NextResponse.json({
+          choices: [{ message: { content: '{"tool":"match_product","type":"мурабаха","minAmount":1000000,"query":"мурабаха"}' } }]
+        });
+      }
+      
+      if (messageLower.includes('карт')) {
+        return NextResponse.json({
+          choices: [{ message: { content: '{"tool":"match_product","type":"карта","minAmount":0,"query":"карта"}' } }]
+        });
+      }
+      
+      if (messageLower.includes('накопить') || messageLower.includes('цель')) {
+        // Check if amount and time are mentioned
+        const amountMatch = messageLower.match(/(\d+)\s*(млн|тыс|тысяч)/);
+        const timeMatch = messageLower.match(/за\s*(\d+)\s*(год|месяц)/);
+        
+        if (amountMatch && timeMatch) {
+          const amount = parseInt(amountMatch[1]);
+          const multiplier = amountMatch[2].includes('млн') ? 1000000 : 1000;
+          const totalAmount = amount * multiplier;
+          
+          const years = timeMatch[2].includes('год') ? parseInt(timeMatch[1]) : 0;
+          const months = timeMatch[2].includes('месяц') ? parseInt(timeMatch[1]) : years * 12;
+          
+          const targetDate = new Date();
+          targetDate.setMonth(targetDate.getMonth() + months);
+          const dateISO = targetDate.toISOString().split('T')[0];
+          
+          return NextResponse.json({
+            choices: [{ message: { content: `{"tool":"plan_goal","targetAmount":${totalAmount},"targetDate":"${dateISO}"}` } }]
+          });
+        }
+        
+        return NextResponse.json({
+          choices: [{ message: { content: 'Какую сумму хотите накопить и к какой дате?' } }]
+        });
+      }
+      
+      // Default demo response
+      return NextResponse.json({
+        choices: [{ message: { content: 'Это демо-режим Zaman AI. Я могу помочь с исламскими финансами, подбором продуктов и планированием целей.' } }]
+      });
+    }
+
     // Get RAG context for Islamic finance terms
     let ragContext = '';
     try {
