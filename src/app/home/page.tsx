@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { accounts, totalBalance, allocateSalary, simulateInvestment, coverOverage, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
+import { accounts, totalBalance, allocateSalary, simulateInvestment, addTransaction, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
 import { track } from '../../lib/telemetry';
 import ConfirmModal from '../../components/ConfirmModal';
 import { VoiceController } from '../../lib/voice';
@@ -142,9 +142,7 @@ export default function HomePage() {
   const getInstrumentName = (instrument: Instrument): string => {
     const names = {
       'sukuk': 'Сукук',
-      'halal_equities': 'Halal-акции',
-      'gold': 'Золото',
-      'crypto': 'Крипто (спорный актив)'
+      'gold': 'Золото'
     };
     return names[instrument];
   };
@@ -196,6 +194,14 @@ export default function HomePage() {
             cardAccount.balance += amount;
             setUserAccounts([...userAccounts]);
             track('topup', { amount, account: 'card', source: 'voice' });
+            
+            // Add transaction record
+            addTransaction({
+              date: new Date().toISOString(),
+              amount: amount, // positive for income
+              merchant: 'Пополнение счета',
+              category: 'пополнения'
+            });
           }
           setModal({ isOpen: false, description: '', onConfirm: () => {} });
         }
@@ -209,6 +215,23 @@ export default function HomePage() {
         requireSecondFactorSum: amount > 100000 ? amount : undefined,
         onConfirm: () => {
           // Implement transfer logic
+          const cardAccount = userAccounts.find(a => a.type === 'card');
+          const savingsAccount = userAccounts.find(a => a.type === 'savings');
+          
+          if (cardAccount && savingsAccount && cardAccount.balance >= amount) {
+            cardAccount.balance -= amount;
+            savingsAccount.balance += amount;
+            setUserAccounts([...userAccounts]);
+            
+            // Add transaction record
+            addTransaction({
+              date: new Date().toISOString(),
+              amount: -amount, // negative for expense
+              merchant: `Перевод на ${command.target}`,
+              category: 'переводы'
+            });
+          }
+          
           setModal({ isOpen: false, description: '', onConfirm: () => {} });
         }
       });
@@ -323,10 +346,10 @@ export default function HomePage() {
         >
           <Card className="p-5 md:p-6">
             <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">Быстрые действия</h2>
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="space-y-2">
                 <Button onClick={handleTopup} className="w-full">
-                  Пополнить
+                  Пополнить счёт
                 </Button>
                 <p className="text-xs text-z-ink-2 text-center">Добавить средства</p>
               </div>
@@ -341,12 +364,6 @@ export default function HomePage() {
                   <Link href="/spending">Анализ расходов</Link>
                 </Button>
                 <p className="text-xs text-z-ink-2 text-center">Просмотр трат</p>
-              </div>
-              <div className="space-y-2">
-                <Button variant="secondary" asChild className="w-full">
-                  <Link href="/products">Каталог продуктов</Link>
-                </Button>
-                <p className="text-xs text-z-ink-2 text-center">Банковские продукты</p>
               </div>
             </div>
             
@@ -462,7 +479,7 @@ export default function HomePage() {
               <div className="flex items-start space-x-2">
                 <div className="text-yellow-600 text-lg">⚠️</div>
                 <div className="text-sm text-yellow-900">
-                  <strong>Симуляция.</strong> Инвестирование только в халяль-совместимые активы. Доход не гарантирован. Вознаграждение за агентские услуги (wakala) 0.1% при входе/выходе.
+                  <strong>Симуляция.</strong> Доход не гарантирован. Инвестирование в рамках шариата. Вознаграждение за агентские услуги (wakala) 0.1% при входе/выходе.
                 </div>
               </div>
             </Card>
@@ -484,8 +501,8 @@ export default function HomePage() {
                 <label className="block text-sm font-medium text-z-ink-2 mb-2">
                   Инструмент
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {(['sukuk', 'halal_equities', 'gold', 'crypto'] as Instrument[]).map(instrument => (
+                <div className="grid grid-cols-2 gap-2">
+                  {(['sukuk', 'gold'] as Instrument[]).map(instrument => (
                     <Button
                       key={instrument}
                       variant={selectedInstrument === instrument ? 'primary' : 'ghost'}
@@ -494,7 +511,6 @@ export default function HomePage() {
                       className="w-full"
                     >
                       {getInstrumentName(instrument)}
-                      {instrument === 'crypto' && ' *'}
                     </Button>
                   ))}
                 </div>
@@ -523,6 +539,17 @@ export default function HomePage() {
                 >
                   Оформить программу
                 </Button>
+              </Card>
+            )}
+
+            {investmentResult && (
+              <Card className="mt-4 p-4 bg-blue-50 border border-blue-200">
+                <div className="flex items-start space-x-2">
+                  <div className="text-blue-600 text-lg">ℹ️</div>
+                  <div className="text-sm text-blue-900">
+                    <strong>Симуляция.</strong> Доход не гарантирован. Инвестирование в рамках шариата.
+                  </div>
+                </div>
               </Card>
             )}
             </div>

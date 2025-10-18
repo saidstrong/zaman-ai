@@ -31,10 +31,6 @@ function inferCategory(merchant: string, memo = ''): string {
   return 'прочее';
 }
 
-function categorizeMerchant(merchant: string, memo = ''): string {
-  if (!merchant) return inferCategory('', memo);
-  return inferCategory(merchant, memo);
-}
 
 export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: boolean = false): SpendingAnalysis {
   // Calculate totals by category (only negative amounts - expenses)
@@ -50,7 +46,7 @@ export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: 
     // Use existing category if available, otherwise categorize from merchant
     const category = hasCategoryColumn && transaction.category 
       ? transaction.category 
-      : categorizeMerchant(transaction.merchant || "", '');
+      : inferCategory(transaction.merchant || "", '');
     
     const month = transaction.date.substring(0, 7); // YYYY-MM
     

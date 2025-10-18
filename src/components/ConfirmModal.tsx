@@ -68,7 +68,7 @@ export default function ConfirmModal({
               {isConfirming ? (
                 <div className="flex items-center space-x-3">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2D9A86]"></div>
-                  <span className="text-sm text-gray-600">В реальном банке здесь будет биометрия/3-D Secure. В демо — подтвердите кликом.</span>
+                  <span className="text-sm text-gray-600">В реальном банке здесь будет подтверждение личности/3-D Secure. В демо — подтвердите кликом.</span>
                 </div>
               ) : biometryComplete ? (
                 <div className="flex items-center space-x-2">
@@ -77,7 +77,7 @@ export default function ConfirmModal({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="text-sm text-green-600">Биометрия подтверждена</span>
+                  <span className="text-sm text-green-600">Подтверждение личности завершено</span>
                 </div>
               ) : null}
             </div>

@@ -56,7 +56,7 @@ export function coverOverage(amount: number, buffer = accounts.find(a => a.type 
 }
 
 // Investment simulation types
-export type Instrument = 'sukuk' | 'halal_equities' | 'gold' | 'crypto';
+export type Instrument = 'sukuk' | 'gold';
 
 export type InvestResult = { 
   instrument: Instrument; 
@@ -65,6 +65,25 @@ export type InvestResult = {
   wakalaFee: number;
   return: number;
   returnPercent: number;
+};
+
+// Transaction tracking types
+export type TransactionRecord = {
+  date: string; // ISO date string
+  amount: number; // negative for expenses
+  merchant: string;
+  category?: string;
+};
+
+// Salary plan personalization types
+export type SalaryPlan = {
+  rent: number;
+  utilities: number;
+  transport: number;
+  food: number;
+  savingsGoal: number;
+  savingsDeadline: string; // ISO date string
+  otherExpenses: Array<{ name: string; amount: number }>;
 };
 
 export function simulateInvestment(amount: number, instrument: Instrument): InvestResult {
@@ -76,14 +95,8 @@ export function simulateInvestment(amount: number, instrument: Instrument): Inve
     case 'sukuk':
       returnPercent = 0.08 + (Math.random() - 0.5) * 0.02; // 6-10% range
       break;
-    case 'halal_equities':
-      returnPercent = 0.12 + (Math.random() - 0.5) * 0.04; // 10-14% range
-      break;
     case 'gold':
       returnPercent = 0.05 + (Math.random() - 0.5) * 0.03; // 3.5-6.5% range
-      break;
-    case 'crypto':
-      returnPercent = -0.2 + Math.random() * 0.4; // -20% to +20% range
       break;
   }
   
@@ -98,4 +111,53 @@ export function simulateInvestment(amount: number, instrument: Instrument): Inve
     return: returnAmount,
     returnPercent: Math.round(returnPercent * 100 * 100) / 100 // Round to 2 decimal places
   };
+}
+
+// Transaction tracking functions
+export function addTransaction(transaction: TransactionRecord): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const existing = localStorage.getItem('transactions');
+    const transactions: TransactionRecord[] = existing ? JSON.parse(existing) : [];
+    transactions.push(transaction);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  } catch (error) {
+    console.error('Failed to save transaction:', error);
+  }
+}
+
+export function getTransactions(): TransactionRecord[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const existing = localStorage.getItem('transactions');
+    return existing ? JSON.parse(existing) : [];
+  } catch (error) {
+    console.error('Failed to load transactions:', error);
+    return [];
+  }
+}
+
+// Salary plan functions
+export function saveSalaryPlan(plan: SalaryPlan): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem('salary_plan', JSON.stringify(plan));
+  } catch (error) {
+    console.error('Failed to save salary plan:', error);
+  }
+}
+
+export function getSalaryPlan(): SalaryPlan | null {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const existing = localStorage.getItem('salary_plan');
+    return existing ? JSON.parse(existing) : null;
+  } catch (error) {
+    console.error('Failed to load salary plan:', error);
+    return null;
+  }
 }

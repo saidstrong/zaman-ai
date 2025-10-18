@@ -35,7 +35,9 @@ export function AppHeader({
         <div className="flex items-center justify-between h-16">
           {/* Left: App title */}
           <div className="flex items-center space-x-3">
-            <h1 className="text-xl font-semibold text-z-ink">{title}</h1>
+            <h1 className="text-xl font-semibold text-z-ink">
+              {title === 'Zaman AI' ? 'Мой банк • Zaman Bank' : title}
+            </h1>
             {showDemoBadge && (
               <span className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium">
                 DEMO

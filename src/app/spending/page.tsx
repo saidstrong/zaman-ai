@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Papa from 'papaparse';
 import { motion } from 'framer-motion';
 import { analyzeSpending, Transaction, SpendingAnalysis } from '../../lib/spending-analysis';
+import { getTransactions } from '../../lib/banking';
 import { AppHeader } from '../../components/AppHeader';
 import { Card } from '../../components/ui';
 
@@ -91,7 +92,7 @@ export default function SpendingPage() {
           const hasCategoryColumn = normalizedHeaders.includes('category');
           
           // Transform data to our Transaction format
-          const transactions: Transaction[] = data.map(row => {
+          const csvTransactions: Transaction[] = data.map(row => {
             const normalizedRow: Record<string, string> = {};
             originalHeaders.forEach((header, index) => {
               normalizedRow[normalizedHeaders[index]] = row[header];
@@ -105,11 +106,12 @@ export default function SpendingPage() {
             };
           }).filter(t => t.date && t.amount !== 0);
 
-          if (transactions.length === 0) {
-            throw new Error('Не найдено валидных транзакций в файле');
+          if (csvTransactions.length === 0 && getTransactions().length === 0) {
+            throw new Error('Не найдено валидных транзакций в файле или в локальном хранилище');
           }
 
-          const spendingAnalysis = analyzeSpending(transactions, hasCategoryColumn);
+          const allTransactions = [...getTransactions(), ...csvTransactions];
+          const spendingAnalysis = analyzeSpending(allTransactions, hasCategoryColumn);
           setAnalysis(spendingAnalysis);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Произошла ошибка при обработке файла');
