@@ -70,7 +70,7 @@ export default function MetricsPage() {
               onClick={clearMetrics}
               className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
             >
-              Очистить
+              Очистить события
             </button>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function MetricsPage() {
                 Последние события:
               </div>
               <div className="space-y-1 mt-1">
-                {stats.events.slice(-3).map((event, index) => (
+                {stats.events.slice(-5).map((event, index) => (
                   <div key={index} className="text-xs text-gray-500 truncate">
                     {new Date(event.t).toLocaleString('ru-RU', {
                       month: 'short',
