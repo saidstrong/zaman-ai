@@ -269,10 +269,7 @@ function ProductsPageComponent() {
             <Link href="/spending" className="hover:text-[#EEFE6D] transition-colors">
               Анализ расходов
             </Link>
-            <span className="text-[#EEFE6D]">Каталог</span>
-            <Link href="/metrics" className="hover:text-[#EEFE6D] transition-colors">
-              Метрики
-            </Link>
+            <span className="text-[#EEFE6D]">Каталог продуктов</span>
           </div>
         </div>
       </nav>

@@ -7,13 +7,59 @@ export interface VoiceCommand {
   instrument?: string;
 }
 
+export interface SRResultItem { 
+  transcript: string; 
+  confidence: number 
+}
+
+export interface SRResult { 
+  isFinal: boolean; 
+  0: SRResultItem 
+}
+
+export interface SRResultList { 
+  length: number; 
+  item(i: number): SRResult; 
+  [index: number]: SRResult 
+}
+
+export interface SRCallbackEvent { 
+  results: SRResultList 
+}
+
+export interface ISpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: (ev: SRCallbackEvent) => void;
+  onerror: (ev: { error: string }) => void;
+  onend: () => void;
+  start(): void;
+  stop(): void;
+}
+
+export type SRConstructor = new () => ISpeechRecognition;
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition?: SRConstructor;
+    SpeechRecognition?: SRConstructor;
+  }
+}
+
+export function createRecognizer(): ISpeechRecognition | null {
+  if (typeof window === 'undefined') return null;
+  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  return Ctor ? new Ctor() : null;
+}
+
 export class VoiceController {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: ISpeechRecognition | null = null;
   private isListening = false;
 
   constructor() {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      this.recognition = new (window as any).webkitSpeechRecognition();
+    this.recognition = createRecognizer();
+    if (this.recognition) {
       this.recognition.continuous = false;
       this.recognition.interimResults = false;
       this.recognition.lang = 'ru-RU';

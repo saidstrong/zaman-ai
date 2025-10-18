@@ -1,11 +1,13 @@
 // Banking mock data and AI allocation logic
 
+export type Currency = 'KZT';
+export type AccountType = 'card' | 'savings' | 'buffer';
 export type Account = { 
   id: string; 
   name: string; 
   balance: number; 
-  currency: 'KZT'; 
-  type: 'card'|'savings'|'buffer' 
+  currency: Currency; 
+  type: AccountType 
 };
 
 export const accounts: Account[] = [
@@ -16,7 +18,7 @@ export const accounts: Account[] = [
 
 export const totalBalance = () => accounts.reduce((s,a)=>s+a.balance,0);
 
-export type Envelope = { key:string; title:string; limit:number; type:'fixed'|'percent' };
+export type Envelope = { key: string; title: string; limit: number; type: 'fixed' | 'percent' };
 
 export const defaultEnvelopes: Envelope[] = [
   { key:'rent', title:'Аренда жилья', limit: 200000, type:'fixed' },
@@ -27,12 +29,17 @@ export const defaultEnvelopes: Envelope[] = [
   { key:'insurance',title:'Страхование', limit: 5, type:'percent' }
 ];
 
-export function allocateSalary(salary:number, envelopes=defaultEnvelopes) {
-  const byKey: Record<string,{title:string, allocated:number, type:string}> = {};
+export type AllocationPlan = {
+  plan: Record<string, { title: string; allocated: number; type: 'fixed' | 'percent' }>;
+  toSavings: number;
+};
+
+export function allocateSalary(salary: number, envelopes = defaultEnvelopes): AllocationPlan {
+  const byKey: Record<string, { title: string; allocated: number; type: 'fixed' | 'percent' }> = {};
   let allocated = 0;
   
   for (const e of envelopes) {
-    const value = e.type==='fixed' ? e.limit : Math.round((e.limit/100)*salary);
+    const value = e.type === 'fixed' ? e.limit : Math.round((e.limit/100)*salary);
     byKey[e.key] = { title: e.title, allocated: value, type: e.type };
     allocated += value;
   }
@@ -41,35 +48,34 @@ export function allocateSalary(salary:number, envelopes=defaultEnvelopes) {
   return { plan: byKey, toSavings };
 }
 
-export function coverOverage(amount:number, buffer=accounts.find(a=>a.type==='buffer')!) {
+export function coverOverage(amount: number, buffer = accounts.find(a => a.type === 'buffer')!) {
   const used = Math.min(buffer.balance, amount);
   buffer.balance -= used;
   return { covered: used, remaining: amount - used };
 }
 
 // Investment simulation types
-export type InvestmentInstrument = 'sukuk' | 'halal-stocks' | 'gold' | 'crypto';
+export type Instrument = 'sukuk' | 'halal_equities' | 'gold' | 'crypto';
 
-export interface InvestmentResult {
-  instrument: InvestmentInstrument;
-  amount: number;
+export type InvestResult = { 
+  instrument: Instrument; 
+  amount: number; 
+  projected: number; 
   fee: number;
-  projectedValue: number;
   return: number;
   returnPercent: number;
-}
+};
 
-export function simulateInvestment(amount: number, instrument: InvestmentInstrument): InvestmentResult {
+export function simulateInvestment(amount: number, instrument: Instrument): InvestResult {
   const fee = Math.round(amount * 0.001); // 0.1% fee
   
   let returnPercent: number;
-  let projectedValue: number;
   
   switch (instrument) {
     case 'sukuk':
       returnPercent = 0.08 + (Math.random() - 0.5) * 0.02; // 6-10% range
       break;
-    case 'halal-stocks':
+    case 'halal_equities':
       returnPercent = 0.12 + (Math.random() - 0.5) * 0.04; // 10-14% range
       break;
     case 'gold':
@@ -81,13 +87,13 @@ export function simulateInvestment(amount: number, instrument: InvestmentInstrum
   }
   
   const returnAmount = Math.round((amount - fee) * returnPercent);
-  projectedValue = amount - fee + returnAmount;
+  const projectedValue = amount - fee + returnAmount;
   
   return {
     instrument,
     amount,
     fee,
-    projectedValue,
+    projected: projectedValue,
     return: returnAmount,
     returnPercent: Math.round(returnPercent * 100 * 100) / 100 // Round to 2 decimal places
   };

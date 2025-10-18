@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { accounts, totalBalance, allocateSalary, simulateInvestment, type InvestmentInstrument } from '../../lib/banking';
+import { accounts, totalBalance, allocateSalary, simulateInvestment, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
 import { track } from '../../lib/telemetry';
 import ConfirmModal from '../../components/ConfirmModal';
 import { VoiceController } from '../../lib/voice';
 
 export default function HomePage() {
-  const [userAccounts, setUserAccounts] = useState(accounts);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [userAccounts, setUserAccounts] = useState<Account[]>(accounts);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(false);
   const [voiceController] = useState(() => new VoiceController());
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState<boolean>(false);
   
   // Modal states
   const [modal, setModal] = useState<{
@@ -28,13 +28,13 @@ export default function HomePage() {
   });
 
   // AI Allocation states
-  const [salary, setSalary] = useState(600000);
-  const [allocationPlan, setAllocationPlan] = useState<any>(null);
+  const [salary, setSalary] = useState<number>(600000);
+  const [allocationPlan, setAllocationPlan] = useState<AllocationPlan | null>(null);
 
   // Investment states
-  const [investmentAmount, setInvestmentAmount] = useState(100000);
-  const [selectedInstrument, setSelectedInstrument] = useState<InvestmentInstrument>('sukuk');
-  const [investmentResult, setInvestmentResult] = useState<any>(null);
+  const [investmentAmount, setInvestmentAmount] = useState<number>(100000);
+  const [selectedInstrument, setSelectedInstrument] = useState<Instrument>('sukuk');
+  const [investmentResult, setInvestmentResult] = useState<InvestResult | null>(null);
 
   useEffect(() => {
     // Load voice setting from localStorage
@@ -133,37 +133,48 @@ export default function HomePage() {
     });
   };
 
-  const getInstrumentName = (instrument: InvestmentInstrument): string => {
+  const getInstrumentName = (instrument: Instrument): string => {
     const names = {
       'sukuk': 'Сукук',
-      'halal-stocks': 'Halal-акции',
+      'halal_equities': 'Halal-акции',
       'gold': 'Золото',
       'crypto': 'Крипто'
     };
     return names[instrument];
   };
 
-  const handleVoiceCommand = (command: any) => {
+  // Event handlers with proper types
+  const onSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSalary(Number(e.target.value || 0));
+  };
+
+  const onInvestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInvestmentAmount(Number(e.target.value || 0));
+  };
+
+  const handleVoiceCommand = (command: { action: string; amount?: number; target?: string }) => {
     if (command.action === 'topup' && command.amount) {
+      const amount = command.amount;
       setModal({
         isOpen: true,
         title: 'Пополнение счета',
-        description: `Пополнить карту на ${command.amount.toLocaleString()} ₸?`,
+        description: `Пополнить карту на ${amount.toLocaleString()} ₸?`,
         onConfirm: () => {
           const cardAccount = userAccounts.find(a => a.type === 'card');
           if (cardAccount) {
-            cardAccount.balance += command.amount;
+            cardAccount.balance += amount;
             setUserAccounts([...userAccounts]);
-            track('topup', { amount: command.amount, account: 'card', source: 'voice' });
+            track('topup', { amount, account: 'card', source: 'voice' });
           }
           setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} });
         }
       });
     } else if (command.action === 'transfer' && command.amount) {
+      const amount = command.amount;
       setModal({
         isOpen: true,
         title: 'Перевод средств',
-        description: `Перевести ${command.amount.toLocaleString()} ₸ на ${command.target}?`,
+        description: `Перевести ${amount.toLocaleString()} ₸ на ${command.target}?`,
         biometryHint: true,
         onConfirm: () => {
           // Implement transfer logic
@@ -324,7 +335,7 @@ export default function HomePage() {
               <input
                 type="number"
                 value={salary}
-                onChange={(e) => setSalary(Number(e.target.value))}
+                onChange={onSalaryChange}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
               />
             </div>
@@ -347,7 +358,7 @@ export default function HomePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(allocationPlan.plan).map(([key, item]: [string, any]) => (
+                      {Object.entries(allocationPlan.plan).map(([key, item]) => (
                         <tr key={key} className="border-b border-gray-100">
                           <td className="py-2">{item.title}</td>
                           <td className="text-right py-2">{item.allocated.toLocaleString()} ₸</td>
@@ -404,7 +415,7 @@ export default function HomePage() {
               <input
                 type="number"
                 value={investmentAmount}
-                onChange={(e) => setInvestmentAmount(Number(e.target.value))}
+                onChange={onInvestChange}
                 className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
               />
             </div>
@@ -414,7 +425,7 @@ export default function HomePage() {
                 Инструмент
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {(['sukuk', 'halal-stocks', 'gold', 'crypto'] as InvestmentInstrument[]).map(instrument => (
+                {(['sukuk', 'halal_equities', 'gold', 'crypto'] as Instrument[]).map(instrument => (
                   <button
                     key={instrument}
                     onClick={() => setSelectedInstrument(instrument)}
@@ -443,7 +454,7 @@ export default function HomePage() {
                 <h3 className="font-semibold mb-2">Результат симуляции</h3>
                 <div className="space-y-2 text-sm">
                   <div>Комиссия банка: {investmentResult.fee.toLocaleString()} ₸ (0.1%)</div>
-                  <div>Ожидаемая стоимость через 12 мес: {investmentResult.projectedValue.toLocaleString()} ₸</div>
+                  <div>Ожидаемая стоимость через 12 мес: {investmentResult.projected.toLocaleString()} ₸</div>
                   <div className={`font-semibold ${
                     investmentResult.return >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
