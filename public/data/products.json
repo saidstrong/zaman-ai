@@ -1,0 +1,87 @@
+[
+  {
+    "id": 1,
+    "name": "Накопительный вклад \"Халяль\"",
+    "type": "вклад",
+    "halalTags": ["халяль", "без процентов"],
+    "minAmount": 50000,
+    "termMonths": 12,
+    "link": "https://zaman.kz/deposits/halal"
+  },
+  {
+    "id": 2,
+    "name": "Мурабаха на недвижимость",
+    "type": "мурабаха",
+    "halalTags": ["халяль", "недвижимость"],
+    "minAmount": 2000000,
+    "termMonths": 240,
+    "link": "https://zaman.kz/murabaha/real-estate"
+  },
+  {
+    "id": 3,
+    "name": "Золотая дебетовая карта",
+    "type": "карта",
+    "halalTags": ["халяль", "без процентов"],
+    "minAmount": 0,
+    "termMonths": 0
+  },
+  {
+    "id": 4,
+    "name": "Мурабаха на автомобиль",
+    "type": "мурабаха",
+    "halalTags": ["халяль", "автомобиль"],
+    "minAmount": 1000000,
+    "termMonths": 60,
+    "link": "https://zaman.kz/murabaha/auto"
+  },
+  {
+    "id": 5,
+    "name": "Вклад \"Безопасность\"",
+    "type": "вклад",
+    "halalTags": ["халяль", "гарантированный доход"],
+    "minAmount": 100000,
+    "termMonths": 6
+  },
+  {
+    "id": 6,
+    "name": "Исламская кредитная карта",
+    "type": "карта",
+    "halalTags": ["халяль", "кредитная"],
+    "minAmount": 0,
+    "termMonths": 0,
+    "link": "https://zaman.kz/cards/islamic-credit"
+  },
+  {
+    "id": 7,
+    "name": "Мурабаха для бизнеса",
+    "type": "мурабаха",
+    "halalTags": ["халяль", "бизнес"],
+    "minAmount": 5000000,
+    "termMonths": 120,
+    "link": "https://zaman.kz/murabaha/business"
+  },
+  {
+    "id": 8,
+    "name": "Вклад \"Рост\"",
+    "type": "вклад",
+    "halalTags": ["халяль", "долгосрочный"],
+    "minAmount": 500000,
+    "termMonths": 36
+  },
+  {
+    "id": 9,
+    "name": "Платиновая карта",
+    "type": "карта",
+    "halalTags": ["халяль", "премиум"],
+    "minAmount": 0,
+    "termMonths": 0
+  },
+  {
+    "id": 10,
+    "name": "Мурабаха на образование",
+    "type": "мурабаха",
+    "halalTags": ["халяль", "образование"],
+    "minAmount": 500000,
+    "termMonths": 84
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "functions": {
+    "app/api/**/route.js": {
+      "runtime": "nodejs18.x",
+      "memory": 1024,
+      "maxDuration": 60,
+      "regions": ["sin1"]
+    }
+  },
+  "headers": [
+    {
+      "source": "/data/products.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
+}
