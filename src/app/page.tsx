@@ -13,7 +13,7 @@ interface Message {
   goalData?: {
     targetAmount: number;
     targetDate: string;
-    monthlyPlan: number;
+    monthly: number;
     months: number;
   };
 }
@@ -107,7 +107,7 @@ function ChatComponent() {
       const toolData: ToolResponse = JSON.parse(content);
       if (toolData.tool === 'plan_goal' && toolData.targetAmount && toolData.targetDate) {
         const result = planGoal(toolData.targetAmount, toolData.targetDate);
-        return `План: ${result.monthlyPlan.toLocaleString()} ₸/мес, месяцев: ${result.months}`;
+        return `План: ${result.monthly.toLocaleString()} ₸/мес, месяцев: ${result.months}`;
       }
       if (toolData.tool === 'match_product' && toolData.type && toolData.minAmount !== undefined) {
         // Route to products page with query parameters
@@ -184,7 +184,7 @@ function ChatComponent() {
                   const result = planGoal(obj.targetAmount, obj.targetDate);
                   const assistantMessage: Message = {
                     role: 'assistant',
-                    content: `План накоплений: ${result.monthlyPlan.toLocaleString()} ₸/мес, срок: ${result.months} мес`,
+                    content: `План накоплений: ${result.monthly.toLocaleString()} ₸/мес, срок: ${result.months} мес`,
                     isGoalPlan: true,
                     goalData: { targetAmount: obj.targetAmount, targetDate: obj.targetDate, ...result }
                   };
@@ -325,7 +325,7 @@ function ChatComponent() {
                   const result = planGoal(obj.targetAmount, obj.targetDate);
                   const assistantMessage: Message = {
                     role: 'assistant',
-                    content: `План накоплений: ${result.monthlyPlan.toLocaleString()} ₸/мес, срок: ${result.months} мес`,
+                    content: `План накоплений: ${result.monthly.toLocaleString()} ₸/мес, срок: ${result.months} мес`,
                     isGoalPlan: true,
                     goalData: { targetAmount: obj.targetAmount, targetDate: obj.targetDate, ...result }
                   };
@@ -431,7 +431,7 @@ function ChatComponent() {
                       track("goal_created", {
                         sum: message.goalData!.targetAmount,
                         dateISO: message.goalData!.targetDate,
-                        monthly: message.goalData!.monthlyPlan,
+                        monthly: message.goalData!.monthly,
                         months: message.goalData!.months
                       });
                       alert('Цель зафиксирована!');

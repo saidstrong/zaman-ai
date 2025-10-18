@@ -1,5 +1,5 @@
-export function planGoal(targetAmount: number, targetDateISO: string) {
-  const now = Date.now();
-  const months = Math.max(1, Math.ceil((new Date(targetDateISO).getTime() - now) / (1000 * 60 * 60 * 24 * 30)));
-  return { monthlyPlan: Math.ceil(targetAmount / months), months };
+export function planGoal(sum: number, dateISO: string) {
+  const ms = new Date(dateISO).getTime() - Date.now();
+  const months = Math.max(1, Math.ceil(ms / (1000 * 60 * 60 * 24 * 30)));
+  return { months, monthly: Math.ceil(sum / months) };
 }
