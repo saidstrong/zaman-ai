@@ -21,10 +21,14 @@ export default function MetricsPage() {
   const [metrics, setMetrics] = useState<Record<string, EventStats>>({});
   const [totalEvents, setTotalEvents] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [telemetryOptIn, setTelemetryOptIn] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     loadMetrics();
+    // Load telemetry opt-in setting
+    const optIn = localStorage.getItem('telemetry_opt_in') === '1';
+    setTelemetryOptIn(optIn);
   }, []);
 
   const loadMetrics = () => {
@@ -56,6 +60,12 @@ export default function MetricsPage() {
       setMetrics({});
       setTotalEvents(0);
     }
+  };
+
+  const toggleTelemetryOptIn = () => {
+    const newOptIn = !telemetryOptIn;
+    setTelemetryOptIn(newOptIn);
+    localStorage.setItem('telemetry_opt_in', newOptIn ? '1' : '0');
   };
 
   const getBarWidth = (count: number, maxCount: number) => {
@@ -107,6 +117,34 @@ export default function MetricsPage() {
                   Уникальных типов событий: <span className="font-bold text-[var(--z-green)]">{Object.keys(metrics).length}</span>
                 </p>
               </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Telemetry Opt-in Toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.1 }}
+        >
+          <Card className="p-5 md:p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-z-ink mb-1">Настройки сбора данных</h3>
+                <p className="text-sm text-z-ink-2">Собирать обезличённые события для улучшения сервиса</p>
+              </div>
+              <button
+                onClick={toggleTelemetryOptIn}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  telemetryOptIn ? 'bg-[var(--z-green)]' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    telemetryOptIn ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
           </Card>
         </motion.div>
@@ -218,7 +256,7 @@ export default function MetricsPage() {
               {/* Bar Chart */}
               <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                 <div
-                  className="bg-[#2D9A86] h-2 rounded-full transition-all duration-300"
+                  className="bg-[#2D9A86] h-2 rounded-full transition-all duration-200"
                   style={{ width: `${getBarWidth(stats.count, maxCount)}%` }}
                 ></div>
               </div>

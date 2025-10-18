@@ -1,6 +1,11 @@
 import { once } from './once';
 
 export function track(event: string, payload?: Record<string, unknown>, dedupeKey?: string) {
+  if (typeof window !== 'undefined') {
+    const optIn = localStorage.getItem('telemetry_opt_in') === '1';
+    if (!optIn) return;
+  }
+  
   const run = () => {
     try {
       console.log("[telemetry]", event, payload ?? {});

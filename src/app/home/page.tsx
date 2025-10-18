@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { accounts, totalBalance, allocateSalary, simulateInvestment, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
+import { accounts, totalBalance, allocateSalary, simulateInvestment, coverOverage, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
 import { track } from '../../lib/telemetry';
 import ConfirmModal from '../../components/ConfirmModal';
 import { VoiceController } from '../../lib/voice';
@@ -19,13 +19,13 @@ export default function HomePage() {
   // Modal states
   const [modal, setModal] = useState<{
     isOpen: boolean;
-    title: string;
+    title?: string;
     description: string;
     biometryHint?: boolean;
+    requireSecondFactorSum?: number;
     onConfirm: () => void;
   }>({
     isOpen: false,
-    title: '',
     description: '',
     onConfirm: () => {}
   });
@@ -38,6 +38,9 @@ export default function HomePage() {
   const [investmentAmount, setInvestmentAmount] = useState<number>(100000);
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument>('sukuk');
   const [investmentResult, setInvestmentResult] = useState<InvestResult | null>(null);
+
+  // Buffer overage state
+  const [bufferOverage, setBufferOverage] = useState<{covered: number; remaining: number} | null>(null);
 
   useEffect(() => {
     // Load voice setting from localStorage
@@ -62,7 +65,7 @@ export default function HomePage() {
           setUserAccounts([...userAccounts]);
           track('topup', { amount: 10000, account: 'card' });
         }
-        setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} });
+        setModal({ isOpen: false, description: '', onConfirm: () => {} });
       }
     });
   };
@@ -82,7 +85,7 @@ export default function HomePage() {
           setUserAccounts([...userAccounts]);
           track('transfer', { amount: 10000, from: 'card', to: 'savings' });
         }
-        setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} });
+        setModal({ isOpen: false, description: '', onConfirm: () => {} });
       }
     });
   };
@@ -122,15 +125,15 @@ export default function HomePage() {
   const handleApplyInvestment = () => {
     setModal({
       isOpen: true,
-      title: 'Оформление инвестиции',
       description: `Оформить инвестицию в ${getInstrumentName(selectedInstrument)} на сумму ${investmentAmount.toLocaleString()} ₸?`,
       biometryHint: true,
+      requireSecondFactorSum: investmentAmount > 100000 ? investmentAmount : undefined,
       onConfirm: () => {
         track('invest_apply', { 
           amount: investmentAmount, 
           instrument: selectedInstrument 
         });
-        setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} });
+        setModal({ isOpen: false, description: '', onConfirm: () => {} });
         alert('Инвестиционная программа оформлена!');
       }
     });
@@ -141,9 +144,33 @@ export default function HomePage() {
       'sukuk': 'Сукук',
       'halal_equities': 'Halal-акции',
       'gold': 'Золото',
-      'crypto': 'Крипто'
+      'crypto': 'Крипто (спорный актив)'
     };
     return names[instrument];
+  };
+
+
+  const handleAdjustLimit = () => {
+    // Move 50000 from savings to buffer
+    const savings = userAccounts.find(a => a.type === 'savings');
+    const buffer = userAccounts.find(a => a.type === 'buffer');
+    
+    if (savings && buffer && savings.balance >= 50000) {
+      savings.balance -= 50000;
+      buffer.balance += 50000;
+      setUserAccounts([...userAccounts]);
+      setBufferOverage(null);
+    }
+  };
+
+  const handleReplan = () => {
+    setBufferOverage(null);
+    // Scroll to AI allocation section
+    document.getElementById('ai-allocation')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handlePostpone = () => {
+    setBufferOverage(null);
   };
 
   // Event handlers with proper types
@@ -160,8 +187,9 @@ export default function HomePage() {
       const amount = command.amount;
       setModal({
         isOpen: true,
-        title: 'Пополнение счета',
         description: `Пополнить карту на ${amount.toLocaleString()} ₸?`,
+        biometryHint: amount > 100000,
+        requireSecondFactorSum: amount > 100000 ? amount : undefined,
         onConfirm: () => {
           const cardAccount = userAccounts.find(a => a.type === 'card');
           if (cardAccount) {
@@ -169,19 +197,19 @@ export default function HomePage() {
             setUserAccounts([...userAccounts]);
             track('topup', { amount, account: 'card', source: 'voice' });
           }
-          setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} });
+          setModal({ isOpen: false, description: '', onConfirm: () => {} });
         }
       });
     } else if (command.action === 'transfer' && command.amount) {
       const amount = command.amount;
       setModal({
         isOpen: true,
-        title: 'Перевод средств',
         description: `Перевести ${amount.toLocaleString()} ₸ на ${command.target}?`,
         biometryHint: true,
+        requireSecondFactorSum: amount > 100000 ? amount : undefined,
         onConfirm: () => {
           // Implement transfer logic
-          setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} });
+          setModal({ isOpen: false, description: '', onConfirm: () => {} });
         }
       });
     }
@@ -223,6 +251,41 @@ export default function HomePage() {
       />
 
       <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Buffer Overage STOP Banner */}
+        {bufferOverage && bufferOverage.remaining > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <Card className="bg-red-50 border border-red-200 p-4">
+              <div className="flex items-start space-x-3">
+                <div className="text-red-600 text-lg">🛑</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-900 mb-2">Лимит превышен</h3>
+                  <p className="text-sm text-red-800 mb-3">
+                    Покрыто из «Буфера»: {bufferOverage.covered.toLocaleString()} ₸. 
+                    Остаток буфера: {userAccounts.find(a => a.type === 'buffer')?.balance.toLocaleString()} ₸.
+                    <br />
+                    Дальнейшие траты приостановлены.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="primary" size="sm" onClick={handleAdjustLimit}>
+                      Сдвинуть лимит
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={handleReplan}>
+                      Перепланировать
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handlePostpone}>
+                      Отложить покупку
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Total Balance Hero Card */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -305,6 +368,7 @@ export default function HomePage() {
 
         {/* AI Salary Allocation */}
         <motion.div
+          id="ai-allocation"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, delay: 0.2 }}
@@ -391,14 +455,14 @@ export default function HomePage() {
           transition={{ duration: 0.25, delay: 0.3 }}
         >
           <Card className="p-5 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">Halal-инвест (симуляция)</h2>
+            <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">ИИ-наставник по инвестициям (симуляция)</h2>
             
             {/* Disclaimer */}
             <Card className="bg-yellow-50 border border-yellow-200 p-4 mb-4">
               <div className="flex items-start space-x-2">
                 <div className="text-yellow-600 text-lg">⚠️</div>
                 <div className="text-sm text-yellow-900">
-                  <strong>Симуляция.</strong> Только халяль-совместимые активы; доход не гарантирован. Комиссия банка 0.1%.
+                  <strong>Симуляция.</strong> Инвестирование только в халяль-совместимые активы. Доход не гарантирован. Вознаграждение за агентские услуги (wakala) 0.1% при входе/выходе.
                 </div>
               </div>
             </Card>
@@ -444,7 +508,7 @@ export default function HomePage() {
               <Card className="mt-4 p-4 bg-z-muted/50">
                 <h3 className="font-semibold mb-3 text-z-ink">Результат симуляции</h3>
                 <div className="space-y-3 text-sm">
-                  <Stat label="Комиссия банка" value={`${investmentResult.fee.toLocaleString()} ₸ (0.1%)`} />
+                  <Stat label="Вознаграждение (wakala)" value={`${investmentResult.wakalaFee.toLocaleString()} ₸ (0.1%)`} />
                   <Stat label="Ожидаемая стоимость через 12 мес" value={`${investmentResult.projected.toLocaleString()} ₸`} />
                   <div className={`font-semibold text-center p-2 rounded-lg ${
                     investmentResult.return >= 0 ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'
@@ -469,11 +533,12 @@ export default function HomePage() {
       {/* Confirm Modal */}
       <ConfirmModal
         isOpen={modal.isOpen}
-        onClose={() => setModal({ isOpen: false, title: '', description: '', onConfirm: () => {} })}
+        onClose={() => setModal({ isOpen: false, description: '', onConfirm: () => {} })}
         onConfirm={modal.onConfirm}
         title={modal.title}
         description={modal.description}
         biometryHint={modal.biometryHint}
+        requireSecondFactorSum={modal.requireSecondFactorSum}
       />
     </div>
   );

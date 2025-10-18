@@ -6,9 +6,10 @@ interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  title: string;
+  title?: string;
   description: string;
   biometryHint?: boolean;
+  requireSecondFactorSum?: number;
   confirmText?: string;
   cancelText?: string;
 }
@@ -17,14 +18,16 @@ export default function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
-  title,
+  title = 'Подтверждение личности',
   description,
   biometryHint = false,
+  requireSecondFactorSum,
   confirmText = 'Подтвердить',
   cancelText = 'Отменить'
 }: ConfirmModalProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [biometryComplete, setBiometryComplete] = useState(false);
+  const [secondFactorInput, setSecondFactorInput] = useState('');
 
   useEffect(() => {
     if (biometryHint && isOpen) {
@@ -41,6 +44,16 @@ export default function ConfirmModal({
     }
   }, [biometryHint, isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setSecondFactorInput('');
+    }
+  }, [isOpen]);
+
+  const isSecondFactorValid = requireSecondFactorSum 
+    ? Number(secondFactorInput) === requireSecondFactorSum
+    : true;
+
   if (!isOpen) return null;
 
   return (
@@ -55,7 +68,7 @@ export default function ConfirmModal({
               {isConfirming ? (
                 <div className="flex items-center space-x-3">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#2D9A86]"></div>
-                  <span className="text-sm text-gray-600">Подтвердите биометрию</span>
+                  <span className="text-sm text-gray-600">В реальном банке здесь будет биометрия/3-D Secure. В демо — подтвердите кликом.</span>
                 </div>
               ) : biometryComplete ? (
                 <div className="flex items-center space-x-2">
@@ -71,6 +84,21 @@ export default function ConfirmModal({
           </div>
         )}
 
+        {requireSecondFactorSum && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Повторите сумму: {requireSecondFactorSum.toLocaleString()} ₸
+            </label>
+            <input
+              type="number"
+              value={secondFactorInput}
+              onChange={(e) => setSecondFactorInput(e.target.value)}
+              placeholder="Введите сумму"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
+            />
+          </div>
+        )}
+
         <div className="flex space-x-3">
           <button
             onClick={onClose}
@@ -80,7 +108,7 @@ export default function ConfirmModal({
           </button>
           <button
             onClick={onConfirm}
-            disabled={biometryHint && !biometryComplete}
+            disabled={(biometryHint && !biometryComplete) || !isSecondFactorValid}
             className="flex-1 bg-[#2D9A86] text-white rounded-2xl px-4 py-2 hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmText}

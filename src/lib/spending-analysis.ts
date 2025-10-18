@@ -11,19 +11,29 @@ export interface SpendingAnalysis {
   advices: string[];
 }
 
-function categorizeMerchant(merchant: string): string {
-  if (!merchant) return "прочее";
-  const s = merchant.toLowerCase();
-  
-  if (/(corner meal|kfc|mcd|hardees|hp canteen|qazaq catering|mood|wedrink)/.test(s)) return "еда";
-  if (/(yandex.go|taxi|onay|indrive|uber)/.test(s)) return "транспорт";
-  if (/(magnum|small|galmart|cash&carry)/.test(s)) return "продукты";
-  if (/(lc waikiki|reserved|h&m|ostin|technodom|miniso|leonardo)/.test(s)) return "шоппинг";
-  if (/(kino.kz|chaplin|funky town)/.test(s)) return "развлечения";
-  if (/(yandex.plus|cursor|ai powered ide)/.test(s)) return "сервисы";
-  if (/(перевод|пополнение|депозит)/.test(s)) return "переводы/пополнения";
-  
-  return "прочее";
+const KEYWORDS: Record<string, string> = {
+  'market|super|grocer|food|еда|продукт|магнит|dostavka': 'продукты',
+  'rest|cafe|кафе|bar|бургер|kfc|мак|pizza|sushi': 'еда',
+  'uber|yandex|taxi|bolt|metro|bus|train|автобус|такси|метро': 'транспорт',
+  'air|avia|aero|airline|flight|самолет|авиа': 'путешествия',
+  'pharm|аптека|pharmacy|здоров': 'здоровье',
+  'marketplace|ozon|wb|kaspi|али|aliexpress|shop|магазин|одежд|обув': 'шоппинг',
+  'movie|cinema|кино|музей|театр|подписк|netflix|spotify|yandex plus': 'развлечения',
+  'mobile|telecom|связь|сотов|казахтелеком|телефон': 'сервисы',
+  'kom|коммун|энерго|водоканал|газ': 'счета',
+};
+
+function inferCategory(merchant: string, memo = ''): string {
+  const hay = `${merchant} ${memo}`.toLowerCase();
+  for (const [re, cat] of Object.entries(KEYWORDS)) {
+    if (new RegExp(re, 'i').test(hay)) return cat;
+  }
+  return 'прочее';
+}
+
+function categorizeMerchant(merchant: string, memo = ''): string {
+  if (!merchant) return inferCategory('', memo);
+  return inferCategory(merchant, memo);
 }
 
 export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: boolean = false): SpendingAnalysis {
@@ -40,7 +50,7 @@ export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: 
     // Use existing category if available, otherwise categorize from merchant
     const category = hasCategoryColumn && transaction.category 
       ? transaction.category 
-      : categorizeMerchant(transaction.merchant || "");
+      : categorizeMerchant(transaction.merchant || "", '');
     
     const month = transaction.date.substring(0, 7); // YYYY-MM
     
@@ -80,6 +90,7 @@ export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: 
     const foodPercentage = ((totalsByCategory["еда"] || 0) / totalSpending) * 100;
     const transportPercentage = ((totalsByCategory["транспорт"] || 0) / totalSpending) * 100;
     const shoppingPercentage = ((totalsByCategory["шоппинг"] || 0) / totalSpending) * 100;
+    const otherPercentage = ((totalsByCategory["прочее"] || 0) / totalSpending) * 100;
     
     if (foodPercentage > 30) {
       advices.push("Еда > 30% — поставь лимит на доставку и кафе.");
@@ -91,6 +102,10 @@ export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: 
     
     if (shoppingPercentage > 20) {
       advices.push("Шоппинг > 20% — задерживай импульсные покупки.");
+    }
+    
+    if (otherPercentage > 25) {
+      advices.push("Много трат помечено как «прочее». Перейдите к автокатегоризации — это улучшит рекомендации.");
     }
     
     if (advices.length === 0) {

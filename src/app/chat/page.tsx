@@ -48,6 +48,11 @@ function ChatComponent() {
   const [isRecording, setIsRecording] = useState(false);
   const [appliedProduct, setAppliedProduct] = useState<AppliedProduct | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [productPreview, setProductPreview] = useState<{
+    type: string;
+    minAmount: number;
+    query: string;
+  } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const pushingRef = useRef(false);
@@ -64,6 +69,9 @@ function ChatComponent() {
   // TTS function
   const speakText = (text: string) => {
     if (!ttsEnabled || !('speechSynthesis' in window)) return;
+    
+    // Limit TTS to short messages (≤ 300 characters)
+    if (text.length > 300) return;
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ru-RU';
@@ -113,17 +121,28 @@ function ChatComponent() {
         return `План: ${result.monthly.toLocaleString()} ₸/мес, месяцев: ${result.months}`;
       }
       if (toolData.tool === 'match_product' && toolData.type && toolData.minAmount !== undefined) {
-        // Route to products page with query parameters
-        const type = encodeURIComponent(toolData.type);
-        const min = Number(toolData.minAmount ?? 0);
-        const q = encodeURIComponent(toolData.query ?? "");
-        const url = `/products?type=${type}&min=${isNaN(min) ? 0 : min}&q=${q}`;
+        // Check if voice mode is enabled
+        const voiceEnabled = localStorage.getItem('voice_enabled') === 'true';
         
-        // Console log for debugging
-        console.log("Redirecting to", url, toolData);
-        
-        router.push(url);
-        return 'Перенаправляю в каталог продуктов...';
+        if (voiceEnabled) {
+          // Voice mode: immediate redirect
+          const type = encodeURIComponent(toolData.type);
+          const min = Number(toolData.minAmount ?? 0);
+          const q = encodeURIComponent(toolData.query ?? "");
+          const url = `/products?type=${type}&min=${isNaN(min) ? 0 : min}&q=${q}`;
+          
+          console.log("Voice mode: redirecting to", url, toolData);
+          router.push(url);
+          return 'Перенаправляю в каталог продуктов...';
+        } else {
+          // Normal mode: show preview card
+          setProductPreview({
+            type: toolData.type,
+            minAmount: Number(toolData.minAmount ?? 0),
+            query: toolData.query ?? ""
+          });
+          return 'Подбор продукта';
+        }
       }
     } catch {
       // Not a valid tool response, return original content
@@ -479,6 +498,58 @@ function ChatComponent() {
                   onClick={() => setAppliedProduct(null)}
                 >
                   Отмена
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Product Preview Card */}
+      {productPreview && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="bg-[var(--z-solar)]/20 border-t border-[var(--z-green)] p-4"
+        >
+          <div className="max-w-4xl mx-auto">
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-3 text-z-ink">Подбор продукта</h3>
+              <div className="space-y-2 text-sm mb-4">
+                <div className="flex justify-between">
+                  <span className="text-z-ink-2">Тип:</span>
+                  <span className="font-medium text-z-ink">{productPreview.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-z-ink-2">Минимальная сумма:</span>
+                  <span className="font-medium text-z-ink">{productPreview.minAmount.toLocaleString()} ₸</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-z-ink-2">Поиск:</span>
+                  <span className="font-medium text-z-ink">{productPreview.query || 'Не указано'}</span>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => {
+                    const type = encodeURIComponent(productPreview.type);
+                    const min = productPreview.minAmount;
+                    const q = encodeURIComponent(productPreview.query);
+                    const url = `/products?type=${type}&min=${min}&q=${q}`;
+                    router.push(url);
+                  }}
+                >
+                  Подобрать
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setProductPreview(null);
+                    inputRef.current?.focus();
+                  }}
+                >
+                  Изменить параметры
                 </Button>
               </div>
             </Card>

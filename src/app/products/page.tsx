@@ -352,11 +352,18 @@ function ProductsPageComponent() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: index * 0.1 }}
               >
-                <Card className="p-6 hover:outline hover:outline-[var(--z-green)]/20 hover:scale-[101%] transition-all duration-200">
+                <Card className="p-6 hover:outline hover:outline-[var(--z-green)]/20 hover:scale-[101%] transition-all duration-150">
                   {/* Product Name */}
                   <h3 className="text-lg font-medium text-z-ink mb-3">
                     {highlightSearchTerm(product.name, searchTerm)}
                   </h3>
+
+                  {/* Halal Badge */}
+                  <div className="mb-3">
+                    <Pill variant="success" size="sm">
+                      Халяль • прозрачные условия
+                    </Pill>
+                  </div>
 
                   {/* Type and Halal Tags */}
                   <div className="mb-4 flex flex-wrap gap-2">

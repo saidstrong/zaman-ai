@@ -51,7 +51,8 @@ export function allocateSalary(salary: number, envelopes = defaultEnvelopes): Al
 export function coverOverage(amount: number, buffer = accounts.find(a => a.type === 'buffer')!) {
   const used = Math.min(buffer.balance, amount);
   buffer.balance -= used;
-  return { covered: used, remaining: amount - used };
+  const remaining = amount - used;
+  return { covered: used, remaining }; // remaining > 0 indicates STOP
 }
 
 // Investment simulation types
@@ -61,13 +62,13 @@ export type InvestResult = {
   instrument: Instrument; 
   amount: number; 
   projected: number; 
-  fee: number;
+  wakalaFee: number;
   return: number;
   returnPercent: number;
 };
 
 export function simulateInvestment(amount: number, instrument: Instrument): InvestResult {
-  const fee = Math.round(amount * 0.001); // 0.1% fee
+  const wakalaFee = Math.round(amount * 0.001); // 0.1% wakala fee
   
   let returnPercent: number;
   
@@ -86,13 +87,13 @@ export function simulateInvestment(amount: number, instrument: Instrument): Inve
       break;
   }
   
-  const returnAmount = Math.round((amount - fee) * returnPercent);
-  const projectedValue = amount - fee + returnAmount;
+  const returnAmount = Math.round((amount - wakalaFee) * returnPercent);
+  const projectedValue = amount - wakalaFee + returnAmount;
   
   return {
     instrument,
     amount,
-    fee,
+    wakalaFee,
     projected: projectedValue,
     return: returnAmount,
     returnPercent: Math.round(returnPercent * 100 * 100) / 100 // Round to 2 decimal places
