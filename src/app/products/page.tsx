@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { track } from '../../lib/telemetry';
+import { AppHeader } from '../../components/AppHeader';
+import { Card, Button, Badge, Stat, Pill } from '../../components/ui';
 
 interface Product {
   id: number;
@@ -214,7 +217,7 @@ function ProductsPageComponent() {
     const parts = text.split(regex);
     
     return parts.map((part, index) => 
-      regex.test(part) ? <mark key={index} className="bg-yellow-200 px-1 rounded">{part}</mark> : part
+      regex.test(part) ? <mark key={index} className="bg-[var(--z-solar)]/60 rounded px-1">{part}</mark> : part
     );
   };
 
@@ -254,197 +257,181 @@ function ProductsPageComponent() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation Bar */}
-      <nav className="bg-[#2D9A86] text-white p-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Каталог продуктов Zaman Bank</h1>
-          <div className="flex space-x-4">
-            <Link href="/chat" className="hover:text-[#EEFE6D] transition-colors">
-              Чат
-            </Link>
-            <Link href="/home" className="hover:text-[#EEFE6D] transition-colors">
-              Мой банк
-            </Link>
-            <Link href="/spending" className="hover:text-[#EEFE6D] transition-colors">
-              Анализ расходов
-            </Link>
-            <span className="text-[#EEFE6D]">Каталог продуктов</span>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-z-cloud">
+      <AppHeader title="Каталог продуктов Zaman Bank" />
 
       <main className="max-w-7xl mx-auto p-6">
         {/* Filters Section */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Фильтры</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            {/* Search Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Поиск по названию
-              </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Введите название продукта..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
-              />
-            </div>
-
-            {/* Type Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Тип продукта
-              </label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
-              >
-                <option value="">Все типы</option>
-                {productTypes.map(type => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Min Amount Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Минимальная сумма (до)
-              </label>
-              <input
-                type="number"
-                value={minAmountFilter || ''}
-                onChange={(e) => setMinAmountFilter(Number(e.target.value) || 0)}
-                placeholder="Введите сумму..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col justify-end space-y-2">
-              <button
-                onClick={applyFilters}
-                className="bg-[#2D9A86] text-white px-4 py-2 rounded-lg hover:bg-[#248076] transition-colors"
-              >
-                Применить
-              </button>
-              <button
-                onClick={resetFilters}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                Сбросить
-              </button>
-            </div>
-          </div>
-
-          {/* Filter Summary */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Найдено {filteredProducts.length} продуктов
-            </div>
-            <div className="bg-[#EEFE6D] text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-              Найдено {filteredProducts.length} продуктов
-            </div>
-          </div>
-        </div>
-
-        {/* Results Badge */}
-        {filteredProducts.length > 0 && (
-          <div className="mb-4">
-            <div className="inline-flex items-center bg-[#2D9A86] text-white px-4 py-2 rounded-full text-sm font-medium">
-              Найдено {filteredProducts.length} продуктов
-            </div>
-          </div>
-        )}
-
-        {/* Products Grid */}
-        <div id="product-results" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow"
-            >
-              {/* Product Name */}
-              <h3 className="text-lg font-bold text-gray-900 mb-3">
-                {highlightSearchTerm(product.name, searchTerm)}
-              </h3>
-
-              {/* Type and Halal Tags */}
-              <div className="mb-4">
-                <span className="inline-block bg-[#EEFE6D] text-gray-800 px-3 py-1 rounded-full text-sm font-medium mr-2 mb-2">
-                  {product.type}
-                </span>
-                {product.halalTags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-block bg-[#2D9A86] text-white px-3 py-1 rounded-full text-sm mr-2 mb-2"
-                  >
-                    {tag}
-                  </span>
-                ))}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <Card className="p-5 md:p-6 mb-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">Фильтры</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              {/* Search Input */}
+              <div>
+                <label className="block text-sm font-medium text-z-ink-2 mb-2">
+                  Поиск по названию
+                </label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Введите название продукта..."
+                  className="w-full border border-z-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
+                />
               </div>
 
-              {/* Term and Min Amount */}
-              <div className="text-sm text-gray-600 mb-4">
-                <div>Минимум: {formatAmount(product.minAmount)}</div>
-                {product.termMonths > 0 && (
-                  <div>Срок: {formatTerm(product.termMonths)}</div>
-                )}
+              {/* Type Filter */}
+              <div>
+                <label className="block text-sm font-medium text-z-ink-2 mb-2">
+                  Тип продукта
+                </label>
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full border border-z-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
+                >
+                  <option value="">Все типы</option>
+                  {productTypes.map(type => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Min Amount Filter */}
+              <div>
+                <label className="block text-sm font-medium text-z-ink-2 mb-2">
+                  Минимальная сумма (до)
+                </label>
+                <input
+                  type="number"
+                  value={minAmountFilter || ''}
+                  onChange={(e) => setMinAmountFilter(Number(e.target.value) || 0)}
+                  placeholder="Введите сумму..."
+                  className="w-full border border-z-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
+                />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleProductClick(product)}
-                  disabled={submittingId === product.id}
-                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                    submittingId === product.id 
-                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                      : 'bg-[#2D9A86] text-white hover:bg-[#248076]'
-                  }`}
-                >
-                  {submittingId === product.id ? 'Загрузка...' : 'Оформить'}
-                </button>
-                {product.link && (
-                  <a
-                    href={product.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-[#EEFE6D] text-gray-800 px-4 py-2 rounded-lg hover:bg-[#D9E55A] transition-colors text-center"
-                  >
-                    Подробнее
-                  </a>
-                )}
+              <div className="flex flex-col justify-end space-y-2">
+                <Button onClick={applyFilters} className="w-full">
+                  Применить
+                </Button>
+                <Button variant="ghost" onClick={resetFilters} className="w-full">
+                  Сбросить
+                </Button>
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* Filter Summary */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-z-ink-2">
+                Найдено {filteredProducts.length} продуктов
+              </div>
+              <Badge>{filteredProducts.length} продуктов</Badge>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Products Grid */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25, delay: 0.1 }}
+        >
+          <div id="product-results" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: index * 0.1 }}
+              >
+                <Card className="p-6 hover:outline hover:outline-[var(--z-green)]/20 hover:scale-[101%] transition-all duration-200">
+                  {/* Product Name */}
+                  <h3 className="text-lg font-medium text-z-ink mb-3">
+                    {highlightSearchTerm(product.name, searchTerm)}
+                  </h3>
+
+                  {/* Type and Halal Tags */}
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <Pill variant="info">{product.type}</Pill>
+                    {product.halalTags.map((tag, tagIndex) => (
+                      <Pill key={tagIndex} variant="success" size="sm">
+                        {tag}
+                      </Pill>
+                    ))}
+                  </div>
+
+                  {/* Stats */}
+                  <div className="space-y-2 mb-4">
+                    <Stat label="Минимум" value={formatAmount(product.minAmount)} />
+                    {product.termMonths > 0 && (
+                      <Stat label="Срок" value={formatTerm(product.termMonths)} />
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => handleProductClick(product)}
+                      disabled={submittingId === product.id}
+                      className="flex-1"
+                    >
+                      {submittingId === product.id ? 'Загрузка...' : 'Оформить'}
+                    </Button>
+                    {product.link && (
+                      <Button variant="ghost" asChild className="flex-1">
+                        <a href={product.link} target="_blank" rel="noopener noreferrer">
+                          Подробнее
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
 
         {/* No Results */}
         {filteredProducts.length === 0 && products.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="text-red-500 text-lg mb-2">
-              Не удалось загрузить каталог
-            </div>
-            <div className="text-gray-500 text-sm">
-              Проверьте /public/data/products.json
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="text-center py-12"
+          >
+            <Card className="p-8 bg-red-50 border-red-200">
+              <div className="text-red-600 text-lg mb-2 font-medium">
+                Не удалось загрузить каталог
+              </div>
+              <div className="text-red-500 text-sm">
+                Проверьте /public/data/products.json
+              </div>
+            </Card>
+          </motion.div>
         )}
         
         {filteredProducts.length === 0 && products.length > 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg">
-              Нет результатов. Попробуйте изменить фильтры.
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="text-center py-12"
+          >
+            <Card className="p-8">
+              <div className="text-z-ink-2 text-lg">
+                Нет результатов. Попробуйте изменить фильтры.
+              </div>
+            </Card>
+          </motion.div>
         )}
       </main>
     </div>
