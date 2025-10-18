@@ -197,6 +197,18 @@ function ProductsPageComponent() {
     return `${amount.toLocaleString('ru-RU')} ₸`;
   };
 
+  // Highlight search term in product name
+  const highlightSearchTerm = (text: string, searchTerm: string) => {
+    if (!searchTerm) return text;
+    
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => 
+      regex.test(part) ? <mark key={index} className="bg-yellow-200 px-1 rounded">{part}</mark> : part
+    );
+  };
+
   // Format term
   const formatTerm = (months: number) => {
     if (months === 0) return '';
@@ -326,10 +338,19 @@ function ProductsPageComponent() {
               Найдено {filteredProducts.length} продуктов
             </div>
             <div className="bg-[#EEFE6D] text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-              {filteredProducts.length} продуктов
+              Найдено {filteredProducts.length} продуктов
             </div>
           </div>
         </div>
+
+        {/* Results Badge */}
+        {filteredProducts.length > 0 && (
+          <div className="mb-4">
+            <div className="inline-flex items-center bg-[#2D9A86] text-white px-4 py-2 rounded-full text-sm font-medium">
+              Найдено {filteredProducts.length} продуктов
+            </div>
+          </div>
+        )}
 
         {/* Products Grid */}
         <div id="product-results" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -340,7 +361,7 @@ function ProductsPageComponent() {
             >
               {/* Product Name */}
               <h3 className="text-lg font-bold text-gray-900 mb-3">
-                {product.name}
+                {highlightSearchTerm(product.name, searchTerm)}
               </h3>
 
               {/* Type and Halal Tags */}

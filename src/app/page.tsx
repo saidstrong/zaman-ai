@@ -48,6 +48,7 @@ function ChatComponent() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const pushingRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize TTS setting from localStorage
   useEffect(() => {
@@ -94,6 +95,9 @@ function ChatComponent() {
         
         // Clean URL params once to avoid re-firing on HMR/StrictMode
         router.replace("/");
+        
+        // Focus input after redirecting from products
+        setTimeout(() => inputRef.current?.focus(), 100);
       }
     }
   }, [searchParams, router]);
@@ -209,6 +213,8 @@ function ChatComponent() {
       setError(error instanceof Error ? error.message : 'Произошла ошибка');
     } finally {
       setIsLoading(false);
+      // Focus input after sending message
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -468,13 +474,29 @@ function ChatComponent() {
         {error && (
           <div className="flex justify-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg max-w-md">
-              <p className="text-sm mb-2">{error}</p>
-              <button
-                onClick={() => setError(null)}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
-              >
-                Закрыть
-              </button>
+              <p className="text-sm mb-3">{error}</p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setError(null);
+                    if (messages.length > 0) {
+                      const lastMessage = messages[messages.length - 1];
+                      if (lastMessage.role === 'user') {
+                        setInput(lastMessage.content);
+                      }
+                    }
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                >
+                  Повторить
+                </button>
+                <button
+                  onClick={() => setError(null)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                >
+                  Закрыть
+                </button>
+              </div>
             </div>
         </div>
         )}
@@ -547,6 +569,7 @@ function ChatComponent() {
               )}
             </button>
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
