@@ -10,6 +10,8 @@
     "check:build": "next build --turbopack && echo 'OK build'"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
     "next": "15.5.6",
     "papaparse": "^5.5.3",
     "react": "19.1.0",

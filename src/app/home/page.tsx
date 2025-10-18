@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { accounts, totalBalance, allocateSalary, simulateInvestment, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
 import { track } from '../../lib/telemetry';
 import ConfirmModal from '../../components/ConfirmModal';
 import { VoiceController } from '../../lib/voice';
+import { AppHeader } from '../../components/AppHeader';
+import { Card, Button, Badge, Stat, Progress, Pill } from '../../components/ui';
 
 export default function HomePage() {
   const [userAccounts, setUserAccounts] = useState<Account[]>(accounts);
@@ -210,267 +213,256 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-[#2D9A86] text-white p-4 shadow-sm">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-xl font-semibold">Zaman AI — Мой банк</h1>
-              {process.env.NEXT_PUBLIC_DEMO_MODE === '1' && (
-                <span className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium">
-                  DEMO
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={toggleVoice}
-                className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-                  voiceEnabled 
-                    ? 'bg-[#EEFE6D] text-[#2D9A86]' 
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-              >
-                🎤 Голос
-              </button>
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-lg">
-                🧑‍🟩
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation */}
-      <nav className="bg-gray-50 border-b p-4">
-        <div className="max-w-6xl mx-auto flex space-x-4">
-          <Link href="/chat" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Чат
-          </Link>
-          <span className="text-gray-600 font-medium">Мой банк</span>
-          <Link href="/spending" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Анализ расходов
-          </Link>
-          <Link href="/products" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Каталог
-          </Link>
-          <Link href="/metrics" className="text-[#2D9A86] hover:text-[#248076] font-medium">
-            Метрики
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-z-cloud">
+      <AppHeader 
+        title="Zaman AI — Мой банк"
+        showVoiceToggle={true}
+        voiceEnabled={voiceEnabled}
+        onToggleVoice={toggleVoice}
+        showDemoBadge={process.env.NEXT_PUBLIC_DEMO_MODE === '1'}
+      />
 
       <main className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* Total Balance */}
-        <div className="bg-gradient-to-br from-[#2D9A86]/10 to-[#EEFE6D]/10 rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Итого</h2>
-          <div className="text-3xl font-bold text-[#2D9A86] mb-4">
-            {totalBalance().toLocaleString()} ₸
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {userAccounts.map(account => (
-              <div key={account.id} className="bg-white rounded-xl p-4 shadow-sm">
-                <div className="text-sm text-gray-600 mb-1">{account.name}</div>
-                <div className="font-semibold">{account.balance.toLocaleString()} ₸</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Total Balance Hero Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <Card className="bg-gradient-to-br from-[var(--z-green)]/10 to-[var(--z-solar)]/20 p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-4 text-z-ink">Итого</h2>
+            <div className="text-4xl font-semibold tracking-tight text-[var(--z-green)] mb-6">
+              {totalBalance().toLocaleString()}
+              <span className="opacity-70"> ₸</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {userAccounts.map((account, index) => (
+                <motion.div
+                  key={account.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: index * 0.1 }}
+                  className="bg-white/80 rounded-xl p-4 shadow-sm hover:translate-y-[-1px] transition-transform"
+                >
+                  <div className="text-sm text-z-ink-2 mb-1">{account.name}</div>
+                  <div className="font-semibold tabular-nums text-z-ink">{account.balance.toLocaleString()} ₸</div>
+                </motion.div>
+              ))}
+            </div>
+          </Card>
+        </motion.div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Быстрые действия</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button
-              onClick={handleTopup}
-              className="bg-[#2D9A86] text-white rounded-2xl px-4 py-2 hover:opacity-90 transition"
-            >
-              Пополнить
-            </button>
-            <button
-              onClick={handleTransfer}
-              className="bg-[#2D9A86] text-white rounded-2xl px-4 py-2 hover:opacity-90 transition"
-            >
-              Перевести
-            </button>
-            <Link
-              href="/spending"
-              className="bg-[#EEFE6D] text-gray-900 rounded-2xl px-4 py-2 hover:opacity-90 transition text-center"
-            >
-              Анализ расходов
-            </Link>
-            <Link
-              href="/products"
-              className="bg-[#EEFE6D] text-gray-900 rounded-2xl px-4 py-2 hover:opacity-90 transition text-center"
-            >
-              Каталог продуктов
-            </Link>
-          </div>
-          
-          {/* Voice Control */}
-          {voiceEnabled && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <button
-                onClick={startVoiceListening}
-                disabled={isListening}
-                className={`bg-gray-100 text-gray-700 rounded-2xl px-4 py-2 transition ${
-                  isListening ? 'animate-pulse' : 'hover:bg-gray-200'
-                }`}
-              >
-                {isListening ? '🎤 Слушаю...' : '🎤 Голосовое управление'}
-              </button>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.1 }}
+        >
+          <Card className="p-5 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">Быстрые действия</h2>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="space-y-2">
+                <Button onClick={handleTopup} className="w-full">
+                  Пополнить
+                </Button>
+                <p className="text-xs text-z-ink-2 text-center">Добавить средства</p>
+              </div>
+              <div className="space-y-2">
+                <Button onClick={handleTransfer} className="w-full">
+                  Перевести
+                </Button>
+                <p className="text-xs text-z-ink-2 text-center">Между счетами</p>
+              </div>
+              <div className="space-y-2">
+                <Button variant="secondary" asChild className="w-full">
+                  <Link href="/spending">Анализ расходов</Link>
+                </Button>
+                <p className="text-xs text-z-ink-2 text-center">Просмотр трат</p>
+              </div>
+              <div className="space-y-2">
+                <Button variant="secondary" asChild className="w-full">
+                  <Link href="/products">Каталог продуктов</Link>
+                </Button>
+                <p className="text-xs text-z-ink-2 text-center">Банковские продукты</p>
+              </div>
             </div>
-          )}
-        </div>
+            
+            {/* Voice Control */}
+            {voiceEnabled && (
+              <div className="pt-4 border-t border-z-border">
+                <Button
+                  variant="ghost"
+                  onClick={startVoiceListening}
+                  disabled={isListening}
+                  className={`w-full ${isListening ? 'animate-pulse' : ''}`}
+                >
+                  {isListening ? '🎤 Слушаю...' : '🎤 Голосовое управление'}
+                </Button>
+              </div>
+            )}
+          </Card>
+        </motion.div>
 
         {/* AI Salary Allocation */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">ИИ распределение зарплаты</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Сумма зарплаты
-              </label>
-              <input
-                type="number"
-                value={salary}
-                onChange={onSalaryChange}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
-              />
-            </div>
-            <button
-              onClick={handleAllocateSalary}
-              className="bg-[#2D9A86] text-white rounded-2xl px-4 py-2 hover:opacity-90 transition"
-            >
-              Распределить
-            </button>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.2 }}
+        >
+          <Card className="p-5 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">ИИ распределение зарплаты</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-z-ink-2 mb-2">
+                  Сумма зарплаты
+                </label>
+                <input
+                  type="number"
+                  value={salary}
+                  onChange={onSalaryChange}
+                  className="w-full border border-z-border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
+                />
+              </div>
+              <Button onClick={handleAllocateSalary}>
+                Распределить
+              </Button>
             
             {allocationPlan && (
-              <div className="mt-4">
+              <div className="mt-6 space-y-4">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-2">Категория</th>
-                        <th className="text-right py-2">Сумма</th>
-                        <th className="text-center py-2">Тип</th>
+                      <tr className="border-b border-z-border">
+                        <th className="text-left py-3 font-semibold text-z-ink">Категория</th>
+                        <th className="text-right py-3 font-semibold text-z-ink">Сумма</th>
+                        <th className="text-center py-3 font-semibold text-z-ink">Тип</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(allocationPlan.plan).map(([key, item]) => (
-                        <tr key={key} className="border-b border-gray-100">
-                          <td className="py-2">{item.title}</td>
-                          <td className="text-right py-2">{item.allocated.toLocaleString()} ₸</td>
-                          <td className="text-center py-2">
-                            <span className="px-2 py-1 rounded text-xs bg-gray-100">
+                      {Object.entries(allocationPlan.plan).map(([key, item], index) => (
+                        <tr key={key} className={`border-b border-z-border ${index % 2 === 0 ? 'bg-z-muted/30' : ''}`}>
+                          <td className="py-3 text-z-ink-2">{item.title}</td>
+                          <td className="text-right py-3 font-medium tabular-nums text-z-ink">{item.allocated.toLocaleString()} ₸</td>
+                          <td className="text-center py-3">
+                            <Pill variant={item.type === 'fixed' ? 'default' : 'info'} size="sm">
                               {item.type === 'fixed' ? 'фикс' : '%'}
-                            </span>
+                            </Pill>
                           </td>
                         </tr>
                       ))}
-                      <tr className="font-semibold bg-[#EEFE6D]/20">
-                        <td className="py-2">В сбережения</td>
-                        <td className="text-right py-2">{allocationPlan.toSavings.toLocaleString()} ₸</td>
-                        <td className="text-center py-2">
-                          <span className="px-2 py-1 rounded text-xs bg-[#EEFE6D] text-gray-900">
-                            остаток
-                          </span>
+                      <tr className="font-semibold bg-[var(--z-solar)]/25">
+                        <td className="py-3 text-z-ink">В сбережения</td>
+                        <td className="text-right py-3 tabular-nums text-z-ink">{allocationPlan.toSavings.toLocaleString()} ₸</td>
+                        <td className="text-center py-3">
+                          <Pill variant="warning" size="sm">остаток</Pill>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <button
-                  onClick={handleApplyPlan}
-                  className="mt-4 bg-[#EEFE6D] text-gray-900 rounded-2xl px-4 py-2 hover:opacity-90 transition"
-                >
+                
+                {/* Progress visualization */}
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-z-ink-2">Распределение по категориям:</div>
+                  {Object.entries(allocationPlan.plan).map(([key, item]) => (
+                    <div key={key} className="space-y-1">
+                      <div className="flex justify-between text-xs text-z-ink-2">
+                        <span>{item.title}</span>
+                        <span>{Math.round((item.allocated / salary) * 100)}%</span>
+                      </div>
+                      <Progress value={item.allocated} max={salary} className="h-1" />
+                    </div>
+                  ))}
+                </div>
+                
+                <Button variant="secondary" onClick={handleApplyPlan} className="w-full">
                   Применить план
-                </button>
+                </Button>
               </div>
             )}
           </div>
         </div>
 
         {/* Halal Investment */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Halal-инвест (симуляция)</h2>
-          
-          {/* Disclaimer */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
-            <div className="flex items-start space-x-2">
-              <div className="text-yellow-600 text-lg">⚠️</div>
-              <div className="text-sm text-yellow-800">
-                <strong>Симуляция.</strong> Инвестирование возможно только в халяль-совместимые активы. 
-                Доход не гарантирован. Криптовалюты могут вызывать шариатские споры.
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.3 }}
+        >
+          <Card className="p-5 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">Halal-инвест (симуляция)</h2>
+            
+            {/* Disclaimer */}
+            <Card className="bg-yellow-50 border border-yellow-200 p-4 mb-4">
+              <div className="flex items-start space-x-2">
+                <div className="text-yellow-600 text-lg">⚠️</div>
+                <div className="text-sm text-yellow-900">
+                  <strong>Симуляция.</strong> Только халяль-совместимые активы; доход не гарантирован. Комиссия банка 0.1%.
+                </div>
               </div>
-            </div>
-          </div>
+            </Card>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Сумма
-              </label>
-              <input
-                type="number"
-                value={investmentAmount}
-                onChange={onInvestChange}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2D9A86] focus:border-transparent"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Инструмент
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {(['sukuk', 'halal_equities', 'gold', 'crypto'] as Instrument[]).map(instrument => (
-                  <button
-                    key={instrument}
-                    onClick={() => setSelectedInstrument(instrument)}
-                    className={`px-3 py-2 rounded-xl text-sm transition ${
-                      selectedInstrument === instrument
-                        ? 'bg-[#2D9A86] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {getInstrumentName(instrument)}
-                    {instrument === 'crypto' && ' *'}
-                  </button>
-                ))}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-z-ink-2 mb-2">
+                  Сумма
+                </label>
+                <input
+                  type="number"
+                  value={investmentAmount}
+                  onChange={onInvestChange}
+                  className="w-full border border-z-border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
+                />
               </div>
-            </div>
-            
-            <button
-              onClick={handleSimulateInvestment}
-              className="bg-[#2D9A86] text-white rounded-2xl px-4 py-2 hover:opacity-90 transition"
-            >
-              Смоделировать
-            </button>
+              
+              <div>
+                <label className="block text-sm font-medium text-z-ink-2 mb-2">
+                  Инструмент
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {(['sukuk', 'halal_equities', 'gold', 'crypto'] as Instrument[]).map(instrument => (
+                    <Button
+                      key={instrument}
+                      variant={selectedInstrument === instrument ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSelectedInstrument(instrument)}
+                      className="w-full"
+                    >
+                      {getInstrumentName(instrument)}
+                      {instrument === 'crypto' && ' *'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <Button onClick={handleSimulateInvestment}>
+                Смоделировать
+              </Button>
             
             {investmentResult && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-xl">
-                <h3 className="font-semibold mb-2">Результат симуляции</h3>
-                <div className="space-y-2 text-sm">
-                  <div>Комиссия банка: {investmentResult.fee.toLocaleString()} ₸ (0.1%)</div>
-                  <div>Ожидаемая стоимость через 12 мес: {investmentResult.projected.toLocaleString()} ₸</div>
-                  <div className={`font-semibold ${
-                    investmentResult.return >= 0 ? 'text-green-600' : 'text-red-600'
+              <Card className="mt-4 p-4 bg-z-muted/50">
+                <h3 className="font-semibold mb-3 text-z-ink">Результат симуляции</h3>
+                <div className="space-y-3 text-sm">
+                  <Stat label="Комиссия банка" value={`${investmentResult.fee.toLocaleString()} ₸ (0.1%)`} />
+                  <Stat label="Ожидаемая стоимость через 12 мес" value={`${investmentResult.projected.toLocaleString()} ₸`} />
+                  <div className={`font-semibold text-center p-2 rounded-lg ${
+                    investmentResult.return >= 0 ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'
                   }`}>
                     Доходность: {investmentResult.return >= 0 ? '+' : ''}{investmentResult.returnPercent}%
                   </div>
                 </div>
-                <button
+                <Button
+                  variant="secondary"
                   onClick={handleApplyInvestment}
-                  className="mt-3 bg-[#EEFE6D] text-gray-900 rounded-2xl px-4 py-2 hover:opacity-90 transition"
+                  className="mt-4 w-full"
                 >
                   Оформить программу
-                </button>
-              </div>
+                </Button>
+              </Card>
             )}
-          </div>
-        </div>
+            </div>
+          </Card>
+        </motion.div>
       </main>
 
       {/* Confirm Modal */}

@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --z-green: #2D9A86;      /* Persian Green (primary) */
+  --z-green-600: #248076;  /* hover */
+  --z-solar: #EEFE6D;      /* Solar (accent) */
+  --z-cloud: #FFFFFF;      /* Cloud (bg) */
+  --z-ink: #0F172A;        /* neutral text (slate-900) */
+  --z-ink-2: #334155;      /* secondary text */
+  --z-muted: #F8FAFC;      /* surfaces */
+  --z-border: #E5E7EB;     /* borders */
+  --z-shadow: 0 10px 24px rgba(17,24,39,0.08);
+  --radius-xl: 1.25rem;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  .dark {
+    --z-cloud: #0B1320;
+    --z-ink: #E5E7EB;
+    --z-ink-2: #94A3B8;
+    --z-muted: #0F172A;
+    --z-border: #1F2937;
+    --z-shadow: 0 10px 24px rgba(0,0,0,0.45);
   }
 }
 
+html {
+  font-size: 16px;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--z-ink);
+  background: var(--z-cloud);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
