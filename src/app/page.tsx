@@ -367,6 +367,7 @@ function ChatComponent() {
             <h1 className="text-xl font-semibold">Zaman AI Chat</h1>
             <button
               onClick={toggleTts}
+              title="Озвучивать ответы ассистента"
               className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                 ttsEnabled 
                   ? 'bg-[#EEFE6D] text-[#2D9A86]' 
