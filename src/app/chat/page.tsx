@@ -188,7 +188,8 @@ function ChatComponent() {
                 const type = encodeURIComponent(obj.type ?? '');
                 const min = Number(obj.minAmount ?? 0);
                 const q = encodeURIComponent(obj.query ?? '');
-                router.push(`/products?type=${type}&min=${isNaN(min) ? 0 : min}&q=${q}`);
+                const m = obj.monthsHint ? `&months=${encodeURIComponent(obj.monthsHint)}` : '';
+                router.push(`/products?type=${type}&min=${isNaN(min) ? 0 : min}&q=${q}${m}`);
                 consumed = true;
                 
                 // Track product search

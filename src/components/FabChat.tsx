@@ -25,6 +25,7 @@ interface ProductPreview {
   type: string;
   minAmount: number;
   query: string;
+  monthsHint?: number;
 }
 
 interface GoalPreview {
@@ -191,7 +192,8 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
             setProductPreview({
               type: obj.type || '',
               minAmount: Number(obj.minAmount || 0),
-              query: obj.query || ''
+              query: obj.query || '',
+              monthsHint: obj.monthsHint
             });
             
             const assistantMessage: Message = {
@@ -269,6 +271,11 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
       if (productPreview.type) params.set('type', productPreview.type);
       if (productPreview.minAmount > 0) params.set('min', productPreview.minAmount.toString());
       if (productPreview.query) params.set('q', productPreview.query);
+      
+      // Add monthsHint if available (from the new routing system)
+      if (productPreview.monthsHint) {
+        params.set('months', productPreview.monthsHint.toString());
+      }
       
       router.push(`/products?${params.toString()}`);
       setIsOpen(false);
