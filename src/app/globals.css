@@ -6,9 +6,9 @@
   --z-green-600: #248076;  /* hover */
   --z-solar: #EEFE6D;      /* Solar (accent) */
   --z-cloud: #FFFFFF;      /* Cloud (bg) */
-  --z-ink: #0F172A;        /* neutral text (slate-900) */
+  --z-ink: #0B1F1A;        /* neutral text */
   --z-ink-2: #334155;      /* secondary text */
-  --z-muted: #F8FAFC;      /* surfaces */
+  --z-muted: #6B7D78;      /* muted text */
   --z-border: #E5E7EB;     /* borders */
   --z-shadow: 0 4px 12px rgba(17,24,39,0.08);
   --radius-xl: 1rem;
@@ -48,8 +48,21 @@ body {
 /* Gradient utilities */
 .bg-hero { background: var(--grad-hero); }
 .bg-card { background: var(--grad-card); }
-.bg-cta  { background: var(--grad-cta); }
-.bg-chip { background: var(--grad-chip); }
+
+/* Card utilities */
+.card-safe {
+  background: #FFFFFF;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 8px 28px rgba(0,0,0,.06);
+}
+
+.stat-chip {
+  background: rgba(255,255,255,.92);
+  backdrop-filter: saturate(1.2) blur(6px);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 14px;
+}
 
 /* Glass effect */
 .glass { 
