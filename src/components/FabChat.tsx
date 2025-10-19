@@ -27,11 +27,28 @@ interface ProductPreview {
   query: string;
 }
 
+interface GoalPreview {
+  amount: number;
+  months: number;
+  targetDate: string;
+  purpose: string;
+  card?: {
+    title: string;
+    subtitle: string;
+    rows: Array<{label: string; value: string}>;
+  };
+}
+
+type PendingSlot = null | { kind: 'goal.months' } | { kind: 'goal.amount' };
+
 export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
   const { messages, addMessage, isOpen, setIsOpen } = useChat();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [productPreview, setProductPreview] = useState<ProductPreview | null>(null);
+  const [goalPreview, setGoalPreview] = useState<GoalPreview | null>(null);
+  const [pendingSlot, setPendingSlot] = useState<PendingSlot>(null);
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [voiceController] = useState(() => new VoiceController());
   const [isListening, setIsListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,10 +86,36 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
     }
   }, [onVoiceCommand]);
 
+  // Preprocess user input for slot filling
+  const preprocessUserInput = (userInput: string): string => {
+    const trimmed = userInput.trim();
+    
+    // If we're waiting for months and user sent just a number
+    if (pendingSlot?.kind === 'goal.months') {
+      const match = trimmed.match(/^(\d{1,3})/);
+      if (match) {
+        setPendingSlot(null);
+        return `${match[1]} месяцев`;
+      }
+    }
+    
+    // If we're waiting for amount and user sent just a number
+    if (pendingSlot?.kind === 'goal.amount') {
+      const match = trimmed.match(/^(\d+(?:[.,]\d{3})*(?:[.,]\d{2})?)/);
+      if (match) {
+        setPendingSlot(null);
+        const amount = match[1].replace(/[.,]/g, '');
+        return `${amount} тенге`;
+      }
+    }
+    
+    return userInput;
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const currentInput = input;
+    const currentInput = preprocessUserInput(input);
     setInput('');
     setIsLoading(true);
 
@@ -143,6 +186,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
         const s = text.trim();
         if (s.startsWith('{') && s.endsWith('}')) {
           const obj = JSON.parse(s);
+          
           if (obj?.tool === 'match_product') {
             setProductPreview({
               type: obj.type || '',
@@ -153,18 +197,40 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
             const assistantMessage: Message = {
               id: (Date.now() + 1).toString(),
               role: 'assistant',
-              content: 'Подбор продукта',
+              content: obj.ui?.chip || 'Подбор продукта',
               timestamp: Date.now() + 1
             };
             addMessage(assistantMessage);
             track('product_match', { type: obj.type, amount: obj.minAmount, query: obj.query });
             consumed = true;
           }
+          
+          if (obj?.tool === 'set_goal') {
+            setGoalPreview({
+              amount: obj.amount || 0,
+              months: obj.months || 0,
+              targetDate: obj.targetDate || '',
+              purpose: obj.purpose || '',
+              card: obj.ui?.card
+            });
+            
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: obj.ui?.card?.title || 'План накоплений',
+              timestamp: Date.now() + 1
+            };
+            addMessage(assistantMessage);
+            track('goal_set', { amount: obj.amount, months: obj.months, purpose: obj.purpose });
+            consumed = true;
+          }
         }
       } catch {}
       
       if (!consumed) {
-        // Regular assistant response
+        // Regular assistant response with quick replies extraction
+        const quickReplies = [...text.matchAll(/\[([^\]]+)\]/g)].map(m => m[1]).slice(0, 4);
+        
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -172,6 +238,11 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
           timestamp: Date.now() + 1
         };
         addMessage(assistantMessage);
+        
+        // Store quick replies for rendering
+        if (quickReplies.length > 0) {
+          setQuickReplies(quickReplies);
+        }
       }
 
       // TTS for short messages (only for regular responses)
@@ -202,7 +273,36 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
       router.push(`/products?${params.toString()}`);
       setIsOpen(false);
       setProductPreview(null);
+      setQuickReplies([]);
     }
+  };
+
+  const handleGoalSave = () => {
+    if (goalPreview) {
+      // Save goal to localStorage and navigate to salary plan
+      const goal = {
+        sum: goalPreview.amount,
+        dateISO: goalPreview.targetDate || (goalPreview.months > 0 ? 
+          new Date(Date.now() + goalPreview.months * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+          null)
+      };
+      
+      try {
+        localStorage.setItem('goal', JSON.stringify(goal));
+        track('goal_saved', { amount: goalPreview.amount, months: goalPreview.months, purpose: goalPreview.purpose });
+      } catch (error) {
+        console.error('Failed to save goal:', error);
+      }
+      
+      setIsOpen(false);
+      setGoalPreview(null);
+      setQuickReplies([]);
+    }
+  };
+
+  const handleQuickReply = (reply: string) => {
+    setInput(reply);
+    setQuickReplies([]);
   };
 
   const handleVoiceToggle = () => {
@@ -337,6 +437,59 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
                         Изменить
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {/* Goal Preview */}
+                {goalPreview && (
+                  <div className="bg-white border border-z-border rounded-xl p-4">
+                    <h3 className="font-medium text-z-ink mb-2">
+                      {goalPreview.card?.title || 'План накоплений'}
+                    </h3>
+                    {goalPreview.card?.subtitle && (
+                      <p className="text-sm text-z-ink-2 mb-3">{goalPreview.card.subtitle}</p>
+                    )}
+                    
+                    {goalPreview.card?.rows && (
+                      <div className="space-y-2 text-sm mb-3">
+                        {goalPreview.card.rows.map((row, index) => (
+                          <div key={index} className="flex justify-between">
+                            <span className="text-z-ink-2">{row.label}:</span>
+                            <span className="font-medium text-z-ink">{row.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleGoalSave}
+                        className="flex-1 bg-[var(--z-green)] text-white rounded-xl py-2 text-sm font-medium"
+                      >
+                        Сохранить план
+                      </button>
+                      <button
+                        onClick={() => setGoalPreview(null)}
+                        className="flex-1 bg-z-muted text-z-ink-2 rounded-xl py-2 text-sm font-medium"
+                      >
+                        Изменить
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Replies */}
+                {quickReplies.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {quickReplies.map((reply, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleQuickReply(reply)}
+                        className="px-3 py-1.5 bg-[var(--z-solar)]/50 text-z-ink rounded-full text-sm font-medium hover:bg-[var(--z-solar)]/70 transition-colors"
+                      >
+                        {reply}
+                      </button>
+                    ))}
                   </div>
                 )}
 
