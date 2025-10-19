@@ -49,12 +49,18 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      // Cleanup voice when modal closes
+      voiceController.stopSpeak();
+      voiceController.stopSTT();
     }
     
     return () => {
       document.body.style.overflow = '';
+      // Cleanup voice on unmount
+      voiceController.stopSpeak();
+      voiceController.stopSTT();
     };
-  }, [isOpen]);
+  }, [isOpen, voiceController]);
 
   // Handle voice commands from global handler
   useEffect(() => {
@@ -169,12 +175,8 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
       }
 
       // TTS for short messages (only for regular responses)
-      if (!consumed && text.length <= 300 && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ru-RU';
-        utterance.rate = 1.0;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+      if (!consumed && text.length <= 300) {
+        voiceController.speak(text);
       }
 
     } catch {
@@ -210,21 +212,23 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
     }
 
     if (isListening) {
-      voiceController.stopListening();
+      voiceController.stopSTT();
       setIsListening(false);
       return;
     }
 
     // Start listening
     setIsListening(true);
-    voiceController.startListening(
-      (command) => {
-        const transcript = command.message || command.action;
-        setInput(transcript);
-        setIsListening(false);
+    voiceController.startSTT(
+      (transcript, isFinal) => {
+        if (isFinal) {
+          setInput(transcript);
+          setIsListening(false);
+        }
       },
       (error) => {
         console.error('Voice error:', error);
+        alert(error);
         setIsListening(false);
       }
     );

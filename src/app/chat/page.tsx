@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { planGoal } from '../../lib/utils';
 import { track } from '../../lib/telemetry';
 import { extractGoal } from '../../lib/nlu';
+import { VoiceController } from '../../lib/voice';
 import { AppHeader } from '../../components/AppHeader';
 import { Card, Button } from '../../components/ui';
 
@@ -48,6 +49,7 @@ function ChatComponent() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const voiceController = useRef<VoiceController>(new VoiceController());
 
   // Initialize TTS setting from localStorage
   useEffect(() => {
@@ -57,18 +59,23 @@ function ChatComponent() {
     }
   }, []);
 
+  // Cleanup voice on unmount
+  useEffect(() => {
+    const controller = voiceController.current;
+    return () => {
+      controller.stopSpeak();
+      controller.stopSTT();
+    };
+  }, []);
+
   // TTS function
   const speakText = (text: string) => {
-    if (!ttsEnabled || !('speechSynthesis' in window)) return;
+    if (!ttsEnabled) return;
     
     // Limit TTS to short messages (≤ 300 characters)
     if (text.length > 300) return;
     
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ru-RU';
-    utterance.rate = 1.0;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    voiceController.current.speak(text);
   };
 
   // Toggle TTS
@@ -76,6 +83,11 @@ function ChatComponent() {
     const newTtsEnabled = !ttsEnabled;
     setTtsEnabled(newTtsEnabled);
     localStorage.setItem('tts_enabled', newTtsEnabled.toString());
+    
+    // Stop current speech when disabling TTS
+    if (!newTtsEnabled) {
+      voiceController.current.stopSpeak();
+    }
   };
 
   // Handle apply_product parameters from URL

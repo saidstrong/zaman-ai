@@ -60,13 +60,38 @@ export class VoiceController {
   private isListening = false;
   private onResultCallback?: (command: VoiceCommand) => void;
   private onErrorCallback?: (error: string) => void;
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
+  private voices: SpeechSynthesisVoice[] = [];
+  private ruVoice: SpeechSynthesisVoice | null = null;
 
   constructor() {
     this.recognition = createRecognizer();
     if (this.recognition) {
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
       this.recognition.lang = 'ru-RU';
+    }
+    
+    // Load voices for TTS
+    this.loadVoices();
+  }
+
+  private loadVoices(): void {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const loadVoicesList = () => {
+      this.voices = window.speechSynthesis.getVoices();
+      this.ruVoice = this.voices.find(voice => 
+        voice.lang.startsWith('ru') || voice.lang.startsWith('RU')
+      ) || null;
+    };
+
+    // Load voices immediately if available
+    loadVoicesList();
+
+    // Listen for voices to load
+    if ('onvoiceschanged' in window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoicesList;
     }
   }
 
@@ -176,5 +201,184 @@ export class VoiceController {
 
   isSupported(): boolean {
     return this.recognition !== null;
+  }
+
+  // TTS Functions
+  speak(text: string): void {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      console.warn('Speech synthesis not supported');
+      return;
+    }
+
+    // Stop any current speech
+    this.stopSpeak();
+
+    // Split text into chunks of max 220 characters
+    const chunks = this.splitText(text, 220);
+    
+    if (chunks.length === 0) return;
+
+    // Speak the first chunk
+    this.speakChunk(chunks, 0);
+  }
+
+  private splitText(text: string, maxLength: number): string[] {
+    const chunks: string[] = [];
+    const sentences = text.split(/[.!?]+/);
+    let currentChunk = '';
+
+    for (const sentence of sentences) {
+      const trimmed = sentence.trim();
+      if (!trimmed) continue;
+
+      if (currentChunk.length + trimmed.length + 1 <= maxLength) {
+        currentChunk += (currentChunk ? '. ' : '') + trimmed;
+      } else {
+        if (currentChunk) {
+          chunks.push(currentChunk + '.');
+          currentChunk = trimmed;
+        } else {
+          // Single sentence too long, split by words
+          const words = trimmed.split(' ');
+          let wordChunk = '';
+          
+          for (const word of words) {
+            if (wordChunk.length + word.length + 1 <= maxLength) {
+              wordChunk += (wordChunk ? ' ' : '') + word;
+            } else {
+              if (wordChunk) chunks.push(wordChunk);
+              wordChunk = word;
+            }
+          }
+          
+          if (wordChunk) currentChunk = wordChunk;
+        }
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk + '.');
+    }
+
+    return chunks;
+  }
+
+  private speakChunk(chunks: string[], index: number): void {
+    if (index >= chunks.length || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(chunks[index]);
+    
+    // Set voice
+    if (this.ruVoice) {
+      utterance.voice = this.ruVoice;
+    }
+    
+    utterance.lang = 'ru-RU';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onend = () => {
+      // Speak next chunk
+      setTimeout(() => {
+        this.speakChunk(chunks, index + 1);
+      }, 100);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event.error);
+    };
+
+    this.currentUtterance = utterance;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  stopSpeak(): void {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
+    window.speechSynthesis.cancel();
+    this.currentUtterance = null;
+  }
+
+  isSpeaking(): boolean {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
+    return window.speechSynthesis.speaking;
+  }
+
+  // Enhanced STT Functions
+  startSTT(
+    onResult: (transcript: string, isFinal: boolean) => void,
+    onError?: (error: string) => void
+  ): void {
+    if (!this.recognition) {
+      onError?.('Распознавание речи недоступно в этом браузере');
+      return;
+    }
+
+    if (this.isListening) return;
+
+    this.isListening = true;
+    
+    this.recognition.onstart = () => {
+      console.log('STT started');
+    };
+    
+    this.recognition.onresult = (event) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.results.length - 1; i >= 0; i--) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+        
+        if (result.isFinal) {
+          finalTranscript = transcript + finalTranscript;
+        } else {
+          interimTranscript = transcript + interimTranscript;
+        }
+      }
+
+      if (finalTranscript) {
+        onResult(finalTranscript.trim(), true);
+      } else if (interimTranscript) {
+        onResult(interimTranscript.trim(), false);
+      }
+    };
+
+    this.recognition.onerror = (event) => {
+      console.error('STT error:', event.error);
+      
+      if (event.error === 'not-allowed') {
+        onError?.('Доступ к микрофону запрещен');
+        this.stopSTT();
+      } else {
+        // Auto-restart for other errors
+        setTimeout(() => {
+          if (this.isListening) {
+            this.recognition?.start();
+          }
+        }, 1000);
+      }
+    };
+
+    this.recognition.onend = () => {
+      this.isListening = false;
+      console.log('STT ended');
+    };
+
+    this.recognition.start();
+  }
+
+  stopSTT(): void {
+    if (this.recognition && this.isListening) {
+      this.recognition.stop();
+      this.isListening = false;
+    }
+  }
+
+  isListeningSTT(): boolean {
+    return this.isListening;
   }
 }
