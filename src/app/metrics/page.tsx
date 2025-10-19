@@ -92,7 +92,7 @@ export default function MetricsPage() {
 
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6">
+      <main className="max-w-6xl mx-auto p-4 md:p-6">
         {/* Summary */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}

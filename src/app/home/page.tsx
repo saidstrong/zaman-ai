@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { accounts, totalBalance, allocateSalary, simulateInvestment, addTransaction, type Account, type AllocationPlan, type Instrument, type InvestResult } from '../../lib/banking';
@@ -11,6 +12,32 @@ import { AppHeader } from '../../components/AppHeader';
 import { Card, Button, Stat, Progress, Pill } from '../../components/ui';
 
 export default function HomePage() {
+  const [isClient, setIsClient] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Check if mobile device
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      router.replace('/home-mobile');
+    }
+  }, [router]);
+
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-z-muted flex items-center justify-center">
+        <div className="text-z-ink-2">Загрузка...</div>
+      </div>
+    );
+  }
+
+  // Desktop version - keep existing implementation
+  return <DesktopHomePage />;
+}
+
+function DesktopHomePage() {
   const [userAccounts, setUserAccounts] = useState<Account[]>(accounts);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(false);
   const [voiceController] = useState(() => new VoiceController());

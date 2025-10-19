@@ -356,7 +356,7 @@ function ChatComponent() {
       />
 
       {/* Messages */}
-      <main className="flex-1 max-w-4xl mx-auto w-full p-4 space-y-4">
+      <main className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-6 space-y-4 md:space-y-6">
         {messages.map((message, index) => (
           <motion.div
             key={index}

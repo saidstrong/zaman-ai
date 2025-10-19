@@ -259,14 +259,14 @@ function ProductsPageComponent() {
     <div className="min-h-screen bg-z-cloud">
       <AppHeader title="Каталог продуктов Zaman Bank" />
 
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Filters Section */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          <Card className="p-5 md:p-6 mb-6">
+          <Card className="p-4 md:p-6 mb-4 md:mb-6 sticky top-0 z-10">
             <h2 className="text-lg md:text-xl font-semibold mb-3 text-z-ink">Фильтры</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
