@@ -87,6 +87,8 @@ export type SalaryPlan = {
   lastUpdated: string;
 };
 
+export type Goal = { sum: number; dateISO?: string };
+
 export type AllocationResult = {
   categories: {
     rent: { amount: number; percentage: number };
@@ -101,6 +103,32 @@ export type AllocationResult = {
   isValid: boolean;
   error?: string;
 };
+
+// Safe helper functions
+export function safeDate(d?: string): Date | null {
+  const t = d ? Date.parse(d) : NaN;
+  return Number.isFinite(t) ? new Date(t) : null;
+}
+
+export function monthsBetween(fromISO?: string, toISO?: string): number | null {
+  const a = safeDate(fromISO);
+  const b = safeDate(toISO ?? new Date().toISOString());
+  if (!a || !b) return null;
+  const months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+  return months;
+}
+
+export function monthlySaving(goal?: Goal): number | null {
+  if (!goal || !goal.sum) return null;
+  const months = monthsBetween(new Date().toISOString(), goal.dateISO);
+  if (!months || months <= 0) return null;
+  return Math.ceil(goal.sum / months);
+}
+
+// Runtime assertion utility
+export function assert<T>(value: T | null | undefined, fallback: T): T {
+  return value ?? fallback;
+}
 
 export function simulateInvestment(amount: number, instrument: Instrument): InvestResult {
   const wakalaFee = Math.round(amount * 0.001); // 0.1% wakala fee
@@ -257,6 +285,38 @@ export function getSalaryPlan(): SalaryPlan | null {
     return parsed;
   } catch (error) {
     console.error('Failed to load salary plan:', error);
+    return null;
+  }
+}
+
+// Safe goal storage functions
+export function saveGoal(goal: Goal): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem('goal', JSON.stringify(goal));
+  } catch (error) {
+    console.error('Failed to save goal:', error);
+  }
+}
+
+export function getGoal(): Goal | null {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const existing = localStorage.getItem('goal');
+    if (!existing) return null;
+    
+    const parsed = JSON.parse(existing);
+    // Validate that parsed data has required structure
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.sum !== 'number') {
+      console.warn('Invalid goal data found, returning null');
+      return null;
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.error('Failed to load goal:', error);
     return null;
   }
 }

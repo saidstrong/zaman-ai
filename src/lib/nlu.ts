@@ -1,4 +1,6 @@
 // Natural Language Understanding for goal extraction
+import { safeDate } from './banking';
+
 export function extractGoal(s: string): { amount: number; months?: number; dateISO?: string; purpose?: string } | null {
   const text = s.toLowerCase().replace(/\s+/g,' ').trim();
 
@@ -32,7 +34,11 @@ export function extractGoal(s: string): { amount: number; months?: number; dateI
   const m2 = text.match(/к\s*(\d{4})[-\.](\d{1,2})(?:[-\.](\d{1,2}))?/);
   if (m2) {
     const [, y, mo, d] = m2;
-    dateISO = `${y}-${String(mo).padStart(2,'0')}-${String(d || '01').padStart(2,'0')}`;
+    const candidateDate = `${y}-${String(mo).padStart(2,'0')}-${String(d || '01').padStart(2,'0')}`;
+    // Validate the date is actually valid
+    if (safeDate(candidateDate)) {
+      dateISO = candidateDate;
+    }
   }
 
   // purpose

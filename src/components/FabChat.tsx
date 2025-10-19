@@ -7,6 +7,7 @@ import { MessageCircle, Mic, MicOff, Send } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { track } from '../lib/telemetry';
 import { extractGoal } from '../lib/nlu';
+import { saveGoal } from '../lib/banking';
 import { VoiceController } from '../lib/voice';
 import { useChat } from './ChatContext';
 
@@ -68,17 +69,31 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
     try {
       // Check for local goal extraction first
       const goalData = extractGoal(currentInput);
-      if (goalData && goalData.amount && goalData.months) {
-        // Handle goal locally
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `План накоплений: ${Math.round(goalData.amount / goalData.months).toLocaleString()} ₸/мес · срок: ${goalData.months} мес`,
-          timestamp: Date.now() + 1
-        };
-        addMessage(assistantMessage);
-        track('goal_created', { sum: goalData.amount, dateISO: goalData.dateISO, monthly: Math.round(goalData.amount / goalData.months), months: goalData.months });
-        return;
+      if (goalData && goalData.amount) {
+        try {
+          // Save goal safely
+          saveGoal({ sum: goalData.amount, dateISO: goalData.dateISO });
+          
+          // Calculate monthly amount safely
+          const monthlyAmount = goalData.months ? Math.round(goalData.amount / goalData.months) : null;
+          
+          const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: `План накоплений: ${monthlyAmount ? monthlyAmount.toLocaleString() : 'не рассчитано'} ₸/мес · срок: ${goalData.months || 'не указан'} мес`,
+            timestamp: Date.now() + 1
+          };
+          addMessage(assistantMessage);
+          track('goal_created', { 
+            sum: goalData.amount, 
+            dateISO: goalData.dateISO || undefined, 
+            monthly: monthlyAmount || 0, 
+            months: goalData.months || 0 
+          });
+          return;
+        } catch (error) {
+          console.warn('Error processing goal:', error);
+        }
       }
 
       // Send to API
