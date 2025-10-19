@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { MessageCircle, Mic, MicOff, Send } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { track } from '../lib/telemetry';
@@ -204,17 +205,20 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
 
   return (
     <>
-      {/* FAB Button */}
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 z-50 md:hidden w-14 h-14 bg-[var(--z-green)] rounded-full shadow-lg flex items-center justify-center text-white hover:bg-[var(--z-green-600)] transition-colors"
-        style={{ marginBottom: 'var(--safe-area-inset-bottom)' }}
-      >
-        <MessageCircle size={24} />
-      </motion.button>
+             {/* FAB Button */}
+             <div className="fixed right-4 bottom-20 z-40">
+               <motion.button
+                 initial={{ scale: 0 }}
+                 animate={{ scale: 1 }}
+                 whileTap={{ scale: 0.95 }}
+                 onClick={() => setIsOpen(true)}
+                 aria-label="Открыть ассистента"
+                 className="relative size-14 rounded-full bg-cta shadow-soft ring-1 ring-[color:rgb(var(--z-ring)/.3)] flex items-center justify-center"
+                 style={{ marginBottom: 'var(--safe-area-inset-bottom)' }}
+               >
+                 <Image src="/brand/moon-star.jpg" alt="" width={28} height={28} className="mx-auto" />
+               </motion.button>
+             </div>
 
       {/* Mini Chat Bottom Sheet */}
       <BottomSheet

@@ -244,37 +244,37 @@ function ProductsPageComponent() {
           <p className="text-z-ink-2 mt-1">Halal банковские продукты</p>
         </div>
 
-        {/* Sticky Search Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="sticky top-0 z-10 mb-4"
-        >
-          <div className="flex items-center space-x-3 bg-white/90 backdrop-blur-md rounded-xl p-3 shadow-sm border border-z-border">
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Поиск продуктов..."
-                className="w-full pl-10 pr-4 py-3 border border-z-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-z-ink-2">
-                🔍
-              </div>
-            </div>
+               {/* Sticky Search Bar */}
+               <motion.div
+                 initial={{ opacity: 0, y: 8 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.25 }}
+                 className="sticky top-0 z-10 mb-4"
+               >
+                 <div className="flex items-center space-x-3 glass rounded-full p-2">
+                   {/* Search Input */}
+                   <div className="flex-1 relative">
+                     <input
+                       type="text"
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       placeholder="Поиск продуктов..."
+                       className="w-full pl-10 pr-4 py-3 border-0 rounded-full focus:outline-none focus:ring-0 bg-transparent text-z-ink placeholder:text-z-muted"
+                     />
+                     <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-z-ink-2">
+                       🔍
+                     </div>
+                   </div>
 
-            {/* Filter Button */}
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="p-3 bg-z-muted hover:bg-z-border rounded-xl transition-colors"
-            >
-              ⚙️
-            </button>
-          </div>
-        </motion.div>
+                   {/* Filter Button */}
+                   <button
+                     onClick={() => setIsFilterModalOpen(true)}
+                     className="p-3 bg-white/60 hover:bg-white/80 rounded-full transition-colors"
+                   >
+                     ⚙️
+                   </button>
+                 </div>
+               </motion.div>
 
         {/* Results Count */}
         <motion.div

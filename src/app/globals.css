@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
 :root {
   --z-green: #2D9A86;      /* Persian Green (primary) */
@@ -42,4 +43,37 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   padding-top: var(--safe-area-inset-top);
   padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* Gradient utilities */
+.bg-hero { background: var(--grad-hero); }
+.bg-card { background: var(--grad-card); }
+.bg-cta  { background: var(--grad-cta); }
+.bg-chip { background: var(--grad-chip); }
+
+/* Glass effect */
+.glass { 
+  background: rgba(255,255,255,.85); 
+  backdrop-filter: blur(8px); 
+  border: 1px solid rgba(255,255,255,.7); 
+}
+
+/* Badge styles */
+.badge-halal { 
+  background: #EAF7F2; 
+  color: #1C5C4E; 
+  border-radius: 9999px; 
+  padding: 2px 8px; 
+  font-size: 11px; 
+}
+
+/* Noise overlay utility */
+.noise::before {
+  content: ''; 
+  position: absolute; 
+  inset: 0; 
+  pointer-events: none;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.05"/></svg>');
+  mix-blend-mode: multiply; 
+  opacity: .06;
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Card, Button, Pill } from './index';
 
 interface Product {
@@ -39,6 +40,20 @@ export function ProductCard({ product, onApply, highlightTerm }: ProductCardProp
     );
   };
 
+  // Get illustration based on product type
+  const getIllustration = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'карта':
+        return '/brand/card.png';
+      case 'вклад':
+        return '/brand/coins.jpg';
+      case 'перевод':
+        return '/brand/paper-planes.jpg';
+      default:
+        return '/brand/coin-duo.png';
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -46,7 +61,11 @@ export function ProductCard({ product, onApply, highlightTerm }: ProductCardProp
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="p-4 h-full bg-emerald-50 hover:bg-emerald-100 transition-colors">
+      <Card className="relative overflow-hidden rounded-2xl bg-card shadow-card border border-white/60 p-4 h-full">
+        {/* Decorative illustration */}
+        <div className="absolute -right-2 -bottom-2 w-24 h-24 opacity-80" aria-hidden="true">
+          <Image src={getIllustration(product.type)} alt="" fill sizes="96px" className="object-contain" />
+        </div>
         {/* Top: Name + Halal Badge */}
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-lg font-medium text-z-ink flex-1">

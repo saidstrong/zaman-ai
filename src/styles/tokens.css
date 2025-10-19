@@ -1,0 +1,25 @@
+:root {
+  --z-green: #2D9A86;
+  --z-solar: #EEFE6D;
+  --z-cloud: #FFFFFF;
+  --z-ink: #0B1F1A;
+  --z-muted: #6B7D78;
+  --z-card: 255 255 255; /* rgb tuple for Tailwind opacity */
+  --z-ring: 45 154 134;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+
+  /* Gradients */
+  --grad-hero: radial-gradient(120% 160% at 15% 10%, #EEFE6D 0%, rgba(238,254,109,0) 40%),
+               radial-gradient(120% 160% at 90% 20%, rgba(45,154,134,.28) 0%, rgba(45,154,134,0) 55%),
+               linear-gradient(180deg, #FFFFFF 0%, #F7FAF9 100%);
+  --grad-card: linear-gradient(180deg, rgba(45,154,134,0.08) 0%, rgba(45,154,134,0) 100%);
+  --grad-cta:  linear-gradient(90deg, #2D9A86 0%, #42B39D 100%);
+  --grad-chip: linear-gradient(180deg, #FFFFFF 0%, #EEFE6D 100%);
+}
+
+.dark:root {
+  --grad-hero: radial-gradient(120% 160% at 15% 10%, rgba(238,254,109,.14) 0%, rgba(238,254,109,0) 45%),
+               radial-gradient(120% 160% at 90% 20%, rgba(45,154,134,.35) 0%, rgba(45,154,134,0) 60%),
+               linear-gradient(180deg, #0B1F1A 0%, #0F2A24 100%);
+}
