@@ -58,6 +58,8 @@ export function createRecognizer(): ISpeechRecognition | null {
 export class VoiceController {
   private recognition: ISpeechRecognition | null = null;
   private isListening = false;
+  private onResultCallback?: (command: VoiceCommand) => void;
+  private onErrorCallback?: (error: string) => void;
 
   constructor() {
     this.recognition = createRecognizer();
@@ -131,16 +133,20 @@ export class VoiceController {
 
     this.isListening = true;
     
+    this.recognition.onstart = () => {
+      // console.log('Voice recognition started');
+    };
+    
     this.recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       const command = this.parseCommand(transcript);
       onResult(command);
-      this.isListening = false;
+      this.stopListening();
     };
 
     this.recognition.onerror = (event) => {
       onError?.(`Ошибка распознавания: ${event.error}`);
-      this.isListening = false;
+      this.stopListening();
     };
 
     this.recognition.onend = () => {
@@ -148,6 +154,13 @@ export class VoiceController {
     };
 
     this.recognition.start();
+
+    // Auto-stop after 8 seconds of silence
+    setTimeout(() => {
+      if (this.isListening) {
+        this.stopListening();
+      }
+    }, 8000);
   }
 
   stopListening(): void {
@@ -155,6 +168,10 @@ export class VoiceController {
       this.recognition.stop();
       this.isListening = false;
     }
+  }
+
+  getListeningState(): boolean {
+    return this.isListening;
   }
 
   isSupported(): boolean {

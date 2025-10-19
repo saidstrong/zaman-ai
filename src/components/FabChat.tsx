@@ -7,6 +7,8 @@ import { MessageCircle, Mic, MicOff, Send } from 'lucide-react';
 import { BottomSheet } from './BottomSheet';
 import { track } from '../lib/telemetry';
 import { extractGoal } from '../lib/nlu';
+import { VoiceController } from '../lib/voice';
+import { useChat } from './ChatContext';
 
 interface FabChatProps {
   onVoiceCommand?: (message: string) => void;
@@ -26,11 +28,11 @@ interface ProductPreview {
 }
 
 export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, addMessage, isOpen, setIsOpen } = useChat();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [productPreview, setProductPreview] = useState<ProductPreview | null>(null);
+  const [voiceController] = useState(() => new VoiceController());
   const [isListening, setIsListening] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -44,17 +46,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
   // Handle voice commands from global handler
   useEffect(() => {
     if (onVoiceCommand) {
-      const handleVoiceMessage = (message: string) => {
-        setIsOpen(true);
-        setInput(message);
-        setTimeout(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        }, 100);
-      };
-      
-      onVoiceCommand = handleVoiceMessage;
+      // Voice command handling moved to GlobalVoiceHandler
     }
   }, [onVoiceCommand]);
 
@@ -68,7 +60,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
       timestamp: Date.now()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    addMessage(userMessage);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
@@ -84,7 +76,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
           content: `План накоплений: ${Math.round(goalData.amount / goalData.months).toLocaleString()} ₸/мес · срок: ${goalData.months} мес`,
           timestamp: Date.now() + 1
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        addMessage(assistantMessage);
         track('goal_created', { sum: goalData.amount, dateISO: goalData.dateISO, monthly: Math.round(goalData.amount / goalData.months), months: goalData.months });
         return;
       }
@@ -116,7 +108,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
           content: 'Подбор продукта',
           timestamp: Date.now() + 1
         };
-        setMessages(prev => [...prev, assistantMessage]);
+        addMessage(assistantMessage);
         track('product_match', { type: data.type, amount: data.minAmount, query: data.query });
         return;
       }
@@ -128,7 +120,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
         content: data.message || 'Извините, произошла ошибка',
         timestamp: Date.now() + 1
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      addMessage(assistantMessage);
 
       // TTS for short messages
       if (assistantMessage.content.length <= 300 && 'speechSynthesis' in window) {
@@ -139,14 +131,14 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
         window.speechSynthesis.speak(utterance);
       }
 
-    } catch (error) {
+    } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: 'Извините, произошла ошибка. Попробуйте еще раз.',
         timestamp: Date.now() + 1
       };
-      setMessages(prev => [...prev, errorMessage]);
+      addMessage(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -166,49 +158,31 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
   };
 
   const handleVoiceToggle = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      alert('Голосовое управление не поддерживается в вашем браузере');
+    if (!voiceController.isSupported()) {
+      alert('Голосовое управление недоступно в этом браузере');
       return;
     }
 
     if (isListening) {
-      // Stop listening
+      voiceController.stopListening();
       setIsListening(false);
       return;
     }
 
     // Start listening
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Голосовое управление не поддерживается в вашем браузере');
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'ru-RU';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setInput(transcript);
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event) => {
-      setIsListening(false);
-      console.error('Speech recognition error:', event);
-      alert('Ошибка распознавания речи');
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
+    setIsListening(true);
+    voiceController.startListening(
+      (command) => {
+        const transcript = command.message || command.action;
+        setInput(transcript);
+        setIsListening(false);
+      },
+      (error) => {
+        console.error('Voice recognition error:', error);
+        alert(error);
+        setIsListening(false);
+      }
+    );
   };
 
   const recentMessages = messages.slice(-5);

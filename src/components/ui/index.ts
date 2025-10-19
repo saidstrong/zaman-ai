@@ -4,3 +4,6 @@ export { Badge } from './Badge';
 export { Stat } from './Stat';
 export { Progress } from './Progress';
 export { Pill } from './Pill';
+export { ChartMini } from './ChartMini';
+export { ProductCard } from './ProductCard';
+export { FilterModal } from './FilterModal';

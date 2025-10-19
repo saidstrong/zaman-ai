@@ -77,13 +77,29 @@ export type TransactionRecord = {
 
 // Salary plan personalization types
 export type SalaryPlan = {
+  salary: number;
   rent: number;
   utilities: number;
   transport: number;
   food: number;
-  savingsGoal: number;
-  savingsDeadline: string; // ISO date string
-  otherExpenses: Array<{ name: string; amount: number }>;
+  savings: number;
+  other: Array<{ label: string; amount: number }>;
+  lastUpdated: string;
+};
+
+export type AllocationResult = {
+  categories: {
+    rent: { amount: number; percentage: number };
+    utilities: { amount: number; percentage: number };
+    transport: { amount: number; percentage: number };
+    food: { amount: number; percentage: number };
+    savings: { amount: number; percentage: number };
+    other: { amount: number; percentage: number };
+    buffer: { amount: number; percentage: number };
+  };
+  total: number;
+  isValid: boolean;
+  error?: string;
 };
 
 export function simulateInvestment(amount: number, instrument: Instrument): InvestResult {
@@ -137,6 +153,48 @@ export function getTransactions(): TransactionRecord[] {
     console.error('Failed to load transactions:', error);
     return [];
   }
+}
+
+// Allocation engine
+export function calculateAllocation(plan: SalaryPlan): AllocationResult {
+  const total = plan.salary;
+  const otherSum = plan.other.reduce((sum, item) => sum + item.amount, 0);
+  const fixedSum = plan.rent + plan.utilities + plan.transport + plan.food + otherSum;
+  const remainder = total - fixedSum;
+
+  if (remainder < 0) {
+    return {
+      categories: {
+        rent: { amount: plan.rent, percentage: 0 },
+        utilities: { amount: plan.utilities, percentage: 0 },
+        transport: { amount: plan.transport, percentage: 0 },
+        food: { amount: plan.food, percentage: 0 },
+        savings: { amount: 0, percentage: 0 },
+        other: { amount: otherSum, percentage: 0 },
+        buffer: { amount: 0, percentage: 0 }
+      },
+      total,
+      isValid: false,
+      error: 'План превышает зарплату, скорректируйте категории.'
+    };
+  }
+
+  const savings = Math.min(plan.savings, remainder);
+  const buffer = remainder - savings;
+
+  return {
+    categories: {
+      rent: { amount: plan.rent, percentage: (plan.rent / total) * 100 },
+      utilities: { amount: plan.utilities, percentage: (plan.utilities / total) * 100 },
+      transport: { amount: plan.transport, percentage: (plan.transport / total) * 100 },
+      food: { amount: plan.food, percentage: (plan.food / total) * 100 },
+      savings: { amount: savings, percentage: (savings / total) * 100 },
+      other: { amount: otherSum, percentage: (otherSum / total) * 100 },
+      buffer: { amount: buffer, percentage: (buffer / total) * 100 }
+    },
+    total,
+    isValid: true
+  };
 }
 
 // Salary plan functions

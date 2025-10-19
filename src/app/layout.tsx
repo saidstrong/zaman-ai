@@ -4,6 +4,7 @@ import "./globals.css";
 import { TabBar } from "../components/TabBar";
 import { FabChat } from "../components/FabChat";
 import { GlobalVoiceHandler } from "../components/GlobalVoiceHandler";
+import { ChatProvider } from "../components/ChatContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,16 +61,18 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <div className="min-h-screen pb-20 md:pb-0">
-          {children}
-        </div>
-        <TabBar />
-        <FabChat />
-        <GlobalVoiceHandler />
-      </body>
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          >
+            <ChatProvider>
+              <div className="min-h-screen pb-20 md:pb-0">
+                {children}
+              </div>
+              <TabBar />
+              <FabChat />
+              <GlobalVoiceHandler />
+            </ChatProvider>
+          </body>
     </html>
   );
 }

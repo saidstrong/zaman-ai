@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { QrCode, Plus, ArrowRightLeft, TrendingUp, History } from 'lucide-react';
-import { accounts, totalBalance, getTransactions } from '../../lib/banking';
+import { accounts, totalBalance, getTransactions, getSalaryPlan, calculateAllocation } from '../../lib/banking';
 import { track } from '../../lib/telemetry';
 import { Card, Button } from '../../components/ui';
 
@@ -16,6 +16,7 @@ export default function HomeMobilePage() {
     merchant: string;
     category?: string;
   }>>([]);
+  const [salaryPlan, setSalaryPlan] = useState(getSalaryPlan());
 
   useEffect(() => {
     track('home_view');
@@ -23,6 +24,9 @@ export default function HomeMobilePage() {
     // Get recent transactions
     const transactions = getTransactions().slice(-5).reverse();
     setRecentTransactions(transactions);
+    
+    // Reload salary plan
+    setSalaryPlan(getSalaryPlan());
   }, []);
 
   const total = totalBalance();
@@ -108,30 +112,53 @@ export default function HomeMobilePage() {
               <TrendingUp size={20} className="text-[var(--z-green)]" />
             </div>
             
-            <div className="space-y-3 mb-4">
-              <div className="flex justify-between items-center">
-                <span className="text-z-ink-2">Аренда жилья</span>
-                <span className="font-semibold text-z-ink tabular-nums">200 000 ₸</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-z-ink-2">Ком. услуги</span>
-                <span className="font-semibold text-z-ink tabular-nums">40 000 ₸</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-z-ink-2">Еда</span>
-                <span className="font-semibold text-z-ink tabular-nums">90 000 ₸</span>
-              </div>
-              <div className="flex justify-between items-center bg-[var(--z-solar)]/25 rounded-lg px-3 py-2">
-                <span className="text-z-ink-2">Остаток в сбережения</span>
-                <span className="font-semibold text-z-ink tabular-nums">270 000 ₸</span>
-              </div>
-            </div>
-            
-            <Link href="/salary-plan">
-              <Button variant="secondary" className="w-full">
-                Открыть план
-              </Button>
-            </Link>
+            {salaryPlan ? (
+              <>
+                <div className="space-y-3 mb-4">
+                  {(() => {
+                    const allocation = calculateAllocation(salaryPlan);
+                    return Object.entries(allocation.categories)
+                      .filter(([, data]) => data.amount > 0)
+                      .slice(0, 4)
+                      .map(([key, data]) => (
+                        <div key={key} className="flex justify-between items-center">
+                          <span className="text-z-ink-2">
+                            {key === 'rent' ? 'Аренда' :
+                             key === 'utilities' ? 'Ком. услуги' :
+                             key === 'transport' ? 'Транспорт' :
+                             key === 'food' ? 'Еда' :
+                             key === 'savings' ? 'Накопления' :
+                             key === 'other' ? 'Прочее' :
+                             key === 'buffer' ? 'Буфер' : key}
+                          </span>
+                          <span className="font-semibold text-z-ink tabular-nums">
+                            {data.amount.toLocaleString()} ₸
+                          </span>
+                        </div>
+                      ));
+                  })()}
+                </div>
+                
+                <Link href="/salary-plan">
+                  <Button variant="secondary" className="w-full">
+                    Настроить план
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="text-center py-6">
+                  <TrendingUp size={32} className="mx-auto text-z-ink-2 mb-2" />
+                  <p className="text-z-ink-2">ИИ-распределение не настроено</p>
+                </div>
+                
+                <Link href="/salary-plan">
+                  <Button variant="secondary" className="w-full">
+                    Настроить
+                  </Button>
+                </Link>
+              </>
+            )}
           </Card>
         </motion.div>
 
