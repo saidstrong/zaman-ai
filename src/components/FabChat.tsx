@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MessageCircle, Mic, MicOff, Send } from 'lucide-react';
-import { BottomSheet } from './BottomSheet';
 import { track } from '../lib/telemetry';
 import { extractGoal } from '../lib/nlu';
 import { saveGoal } from '../lib/banking';
@@ -108,38 +107,47 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
       }
 
       const data = await response.json();
+      const text = data.choices?.[0]?.message?.content ?? '';
+      let consumed = false;
+
+      try {
+        const s = text.trim();
+        if (s.startsWith('{') && s.endsWith('}')) {
+          const obj = JSON.parse(s);
+          if (obj?.tool === 'match_product') {
+            setProductPreview({
+              type: obj.type || '',
+              minAmount: Number(obj.minAmount || 0),
+              query: obj.query || ''
+            });
+            
+            const assistantMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: 'Подбор продукта',
+              timestamp: Date.now() + 1
+            };
+            addMessage(assistantMessage);
+            track('product_match', { type: obj.type, amount: obj.minAmount, query: obj.query });
+            consumed = true;
+          }
+        }
+      } catch {}
       
-      // Handle tool responses
-      if (data.tool === 'match_product') {
-        setProductPreview({
-          type: data.type || '',
-          minAmount: Number(data.minAmount || 0),
-          query: data.query || ''
-        });
-        
+      if (!consumed) {
+        // Regular assistant response
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: 'Подбор продукта',
+          content: text || 'Извините, произошла ошибка',
           timestamp: Date.now() + 1
         };
         addMessage(assistantMessage);
-        track('product_match', { type: data.type, amount: data.minAmount, query: data.query });
-        return;
       }
 
-      // Regular assistant response
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.message || 'Извините, произошла ошибка',
-        timestamp: Date.now() + 1
-      };
-      addMessage(assistantMessage);
-
-      // TTS for short messages
-      if (assistantMessage.content.length <= 300 && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(assistantMessage.content);
+      // TTS for short messages (only for regular responses)
+      if (!consumed && text.length <= 300 && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'ru-RU';
         utterance.rate = 1.0;
         window.speechSynthesis.cancel();
@@ -220,14 +228,24 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
              </div>
 
       {/* Mini Chat Bottom Sheet */}
-      <BottomSheet
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        title="ИИ ассистент"
-      >
-        <div className="p-4 h-full flex flex-col">
+      <div className="fixed inset-x-0 bottom-0 z-50">
+        <div className={`mx-auto w-full max-w-screen-sm rounded-t-2xl bg-white shadow-xl max-h-[70vh] overflow-y-auto ring-1 ring-black/5 transition-transform duration-300 ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
+          {/* Header */}
+          <div className="sticky top-0 bg-white/95 backdrop-blur px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">ИИ ассистент</h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="rounded-full p-1.5 hover:bg-gray-100 active:scale-95"
+                aria-label="Закрыть"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+          <div className="px-4 pt-3 pb-2 space-y-2 overflow-y-auto max-h-[50vh]">
             {recentMessages.length === 0 ? (
               <div className="text-center text-z-ink-2 py-8">
                 <MessageCircle size={32} className="mx-auto mb-2 opacity-50" />
@@ -301,50 +319,60 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
             )}
           </div>
 
-          {/* Input Area */}
-          <div className="flex space-x-2">
-            <div className="flex-1 relative">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Введите сообщение..."
-                className="w-full px-4 py-3 border border-z-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white text-sm"
-              />
+          {/* Input Area - Sticky at bottom */}
+          <div className="sticky bottom-0 bg-white/95 backdrop-blur px-3 py-3 border-t">
+            <div className="flex space-x-2">
+              <div className="flex-1 relative">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Введите сообщение..."
+                  className="w-full px-4 py-3 border border-z-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white text-sm"
+                />
+                <button
+                  onClick={handleVoiceToggle}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
+                    isListening ? 'bg-red-500 text-white' : 'text-z-ink-2 hover:bg-z-muted'
+                  }`}
+                >
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                </button>
+              </div>
               <button
-                onClick={handleVoiceToggle}
-                className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
-                  isListening ? 'bg-red-500 text-white' : 'text-z-ink-2 hover:bg-z-muted'
-                }`}
+                onClick={handleSendMessage}
+                disabled={!input.trim() || isLoading}
+                className="px-4 py-3 bg-[var(--z-green)] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                <Send size={16} />
               </button>
             </div>
-            <button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading}
-              className="px-4 py-3 bg-[var(--z-green)] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send size={16} />
-            </button>
-          </div>
 
-          {/* Full Chat Link */}
-          <div className="mt-3 text-center">
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                router.push('/chat');
-              }}
-              className="text-[var(--z-green)] text-sm hover:text-[var(--z-green-600)]"
-            >
-              Открыть полноэкранный чат
-            </button>
+            {/* Full Chat Link */}
+            <div className="mt-3 text-center">
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push('/assistant');
+                }}
+                className="text-[var(--z-green)] text-sm hover:text-[var(--z-green-600)]"
+              >
+                Открыть полноэкранный чат
+              </button>
+            </div>
           </div>
         </div>
-      </BottomSheet>
+      </div>
+      
+      {/* Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
     </>
   );
 }

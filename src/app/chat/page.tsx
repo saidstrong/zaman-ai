@@ -210,59 +210,38 @@ function ChatComponent() {
         throw new Error(data.error || 'Произошла ошибка');
       }
 
-          const rawContent = data.choices[0]?.message?.content || 'Нет ответа';
-          
-          let toolUsed = false;
+          const text = data.choices?.[0]?.message?.content ?? '';
+          let consumed = false;
+
           try {
-            // Clean and parse JSON
-            const cleaned = rawContent.trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();
-            if (cleaned.startsWith("{") && cleaned.endsWith("}")) {
-              const obj = JSON.parse(cleaned);
-              
-              if (obj?.tool === "match_product" && !pushingRef.current) {
-                // Validate match_product tool
-                if (typeof obj.type === 'string' && typeof obj.query === 'string' && 
-                    (typeof obj.minAmount === 'number' || !isNaN(Number(obj.minAmount)))) {
-                  pushingRef.current = true;
-                  const type = encodeURIComponent(obj.type);
-                  const min = Number(obj.minAmount) || 0;
-                  const q = encodeURIComponent(obj.query);
-                  const url = `/products?type=${type}&min=${min}&q=${q}`;
-                  console.log("Redirecting to", url, obj);
-                  router.push(url);
-                  setTimeout(() => { pushingRef.current = false; }, 1000);
-                  toolUsed = true;
-                }
-              } else if (obj?.tool === "plan_goal") {
-                // Validate plan_goal tool
-                if (typeof obj.targetAmount === 'number' && typeof obj.targetDate === 'string') {
-                  const result = planGoal(obj.targetAmount, obj.targetDate);
-                  const assistantMessage: Message = {
-                    role: 'assistant',
-                    content: `План накоплений: ${result.monthly.toLocaleString()} ₸/мес, срок: ${result.months} мес`,
-                    isGoalPlan: true,
-                    goalData: { targetAmount: obj.targetAmount, targetDate: obj.targetDate, ...result }
-                  };
-                  setMessages([...newMessages, assistantMessage]);
-                  toolUsed = true;
-                }
+            const s = text.trim();
+            if (s.startsWith('{') && s.endsWith('}')) {
+              const obj = JSON.parse(s);
+              if (obj?.tool === 'match_product') {
+                const type = encodeURIComponent(obj.type ?? '');
+                const min = Number(obj.minAmount ?? 0);
+                const q = encodeURIComponent(obj.query ?? '');
+                router.push(`/products?type=${type}&min=${isNaN(min) ? 0 : min}&q=${q}`);
+                consumed = true;
+                
+                // Track product search
+                track('product_search', { 
+                  type: obj.type, 
+                  minAmount: obj.minAmount, 
+                  query: obj.query 
+                });
               }
             }
-          } catch (e) {
-            console.error("Parse error:", e);
-          }
-
-          if (!toolUsed) {
-            // Process other tool responses or render as normal text
-            const processedContent = handleToolResponse(rawContent);
+          } catch {}
+          
+          if (!consumed) {
+            // render as normal assistant text
             const assistantMessage: Message = {
               role: 'assistant',
-              content: processedContent,
+              content: text,
             };
             setMessages([...newMessages, assistantMessage]);
-            
-            // Speak the response if TTS is enabled
-            speakText(processedContent);
+            speakText(assistantMessage.content);
           }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Произошла ошибка');
