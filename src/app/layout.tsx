@@ -48,12 +48,12 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
+                  navigator.serviceWorker.register('/service-worker.js')
                     .then((registration) => {
-                      console.log('SW registered: ', registration);
+                      console.log('SW registered successfully: ', registration);
                     })
                     .catch((registrationError) => {
-                      console.log('SW registration failed: ', registrationError);
+                      console.warn('SW registration failed: ', registrationError);
                     });
                 });
               }
