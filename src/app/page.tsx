@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function Page() {
-  redirect('/home');
+export default function RootPage() {
+  redirect('/home-mobile'); // temporary redirect (307)
 }

@@ -1,20 +1,28 @@
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activated.');
-  event.waitUntil(clients.claim());
+  event.waitUntil(self.clients.claim());
 });
 
+// IMPORTANT: do not hijack navigations; let browser follow redirects.
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // 1) Allow native navigation handling (redirects included)
+  if (req.mode === 'navigate') {
+    event.respondWith(fetch(req, { redirect: 'follow' }));
+    return;
+  }
+
+  // 2) Intercept only same-origin GET requests
+  const sameOrigin = new URL(req.url).origin === self.location.origin;
+  if (req.method !== 'GET' || !sameOrigin) return;
+
+  // 3) Network First with redirect: 'follow' + offline fallback to cache
   event.respondWith(
-    fetch(event.request, { redirect: 'follow' })
-      .then((response) => {
-        if (!response || response.status !== 200) return response;
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    fetch(req, { redirect: 'follow' })
+      .catch(() => caches.match(req))
   );
 });
