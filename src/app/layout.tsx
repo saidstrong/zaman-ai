@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TabBar } from "../components/TabBar";
+import { FabChat } from "../components/FabChat";
+import { GlobalVoiceHandler } from "../components/GlobalVoiceHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,6 +67,8 @@ export default function RootLayout({
           {children}
         </div>
         <TabBar />
+        <FabChat />
+        <GlobalVoiceHandler />
       </body>
     </html>
   );

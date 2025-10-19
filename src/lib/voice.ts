@@ -1,10 +1,11 @@
 // Simple voice command handling via Web Speech API
 
 export interface VoiceCommand {
-  action: 'topup' | 'transfer' | 'invest' | 'unknown';
+  action: 'topup' | 'transfer' | 'invest' | 'assistant' | 'unknown';
   amount?: number;
   target?: string;
   instrument?: string;
+  message?: string;
 }
 
 export interface SRResultItem { 
@@ -31,6 +32,7 @@ export interface ISpeechRecognition {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  onstart?: () => void;
   onresult: (ev: SRCallbackEvent) => void;
   onerror: (ev: { error: string }) => void;
   onend: () => void;
@@ -83,6 +85,16 @@ export class VoiceController {
       }
     }
 
+    // Assistant commands
+    if (lowerText.includes('ассистент') || lowerText.includes('чат') || lowerText.includes('помощь')) {
+      return { action: 'assistant', message: text };
+    }
+
+    // Product search commands
+    if (lowerText.includes('подобрать') || lowerText.includes('найти')) {
+      return { action: 'assistant', message: text };
+    }
+    
     // Parse commands
     if (lowerText.includes('пополнить') || lowerText.includes('пополн')) {
       return { action: 'topup', amount };

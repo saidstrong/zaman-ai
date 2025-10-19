@@ -5,7 +5,6 @@ import Papa from 'papaparse';
 import { motion } from 'framer-motion';
 import { analyzeSpending, Transaction, SpendingAnalysis } from '../../lib/spending-analysis';
 import { getTransactions } from '../../lib/banking';
-import { AppHeader } from '../../components/AppHeader';
 import { Card } from '../../components/ui';
 
 export default function SpendingPage() {
@@ -137,9 +136,13 @@ export default function SpendingPage() {
 
   return (
     <div className="min-h-screen bg-z-cloud">
-      <AppHeader title="Анализ расходов" />
 
       <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+        {/* Header */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-z-ink">Анализ расходов</h1>
+          <p className="text-z-ink-2 mt-1">Анализ ваших финансовых трат</p>
+        </div>
         {/* File Upload */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}

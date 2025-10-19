@@ -15,7 +15,7 @@ const tabs = [
   { href: '/home', icon: Home, label: 'Главная' },
   { href: '/pay', icon: CreditCard, label: 'Оплата' },
   { href: '/products', icon: Package, label: 'Продукты' },
-  { href: '/spending', icon: BarChart3, label: 'Аналитика' },
+  { href: '/analytics', icon: BarChart3, label: 'Аналитика' },
   { href: '/profile', icon: User, label: 'Профиль' }
 ];
 

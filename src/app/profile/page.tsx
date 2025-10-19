@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AppHeader } from '../../components/AppHeader';
 import { Card } from '../../components/ui';
 import { track } from '../../lib/telemetry';
 
@@ -37,9 +36,13 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-z-muted">
-      <AppHeader title="Профиль" />
       
       <main className="p-4 space-y-4">
+        {/* Header */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-z-ink">Профиль</h1>
+          <p className="text-z-ink-2 mt-1">Настройки и информация</p>
+        </div>
         {/* Profile Info */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}

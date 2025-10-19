@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { track } from '../../lib/telemetry';
-import { AppHeader } from '../../components/AppHeader';
 import { Card, Button, Badge, Stat, Pill } from '../../components/ui';
 
 interface Product {
@@ -257,9 +256,13 @@ function ProductsPageComponent() {
 
   return (
     <div className="min-h-screen bg-z-cloud">
-      <AppHeader title="Каталог продуктов Zaman Bank" />
 
       <main className="max-w-7xl mx-auto p-4 md:p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-z-ink">Каталог продуктов</h1>
+          <p className="text-z-ink-2 mt-1">Halal банковские продукты</p>
+        </div>
         {/* Filters Section */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
