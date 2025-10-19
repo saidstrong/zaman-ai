@@ -1,12 +1,27 @@
 {
-  "name": "Zaman Bank",
-  "short_name": "Zaman",
+  "name": "Zaman Bank - Исламский банк",
+  "short_name": "Zaman Bank",
+  "description": "Halal банковские услуги без процентов",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFFFFF",
+  "background_color": "#ffffff",
   "theme_color": "#2D9A86",
+  "orientation": "portrait-primary",
   "icons": [
-    { "src": "/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" },
-    { "src": "/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml" }
-  ]
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "lang": "ru",
+  "dir": "ltr"
 }

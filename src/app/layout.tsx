@@ -41,22 +41,25 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Zaman Bank" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistration().then((reg) => {
-                  if (!reg) {
-                    navigator.serviceWorker
-                      .register('/service-worker.js')
-                      .then(() => console.log('SW registered'))
-                      .catch((err) => console.warn('SW registration failed:', err));
-                  }
-                });
-              }
-            `,
-          }}
-        />
+        {/* Service Worker registration temporarily disabled for production stability */}
+        {process.env.NODE_ENV === 'development' && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistration().then((reg) => {
+                    if (!reg) {
+                      navigator.serviceWorker
+                        .register('/service-worker.js')
+                        .then(() => console.log('SW registered'))
+                        .catch((err) => console.warn('SW registration failed:', err));
+                    }
+                  });
+                }
+              `,
+            }}
+          />
+        )}
       </head>
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}

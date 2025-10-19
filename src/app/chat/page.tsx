@@ -21,14 +21,6 @@ interface Message {
   };
 }
 
-interface ToolResponse {
-  tool: string;
-  targetAmount?: number;
-  targetDate?: string;
-  type?: string;
-  minAmount?: number;
-  query?: string;
-}
 
 interface AppliedProduct {
   id: string;
@@ -55,7 +47,6 @@ function ChatComponent() {
   } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const pushingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Initialize TTS setting from localStorage
@@ -113,42 +104,6 @@ function ChatComponent() {
     }
   }, [searchParams, router]);
 
-  const handleToolResponse = (content: string) => {
-    try {
-      const toolData: ToolResponse = JSON.parse(content);
-      if (toolData.tool === 'plan_goal' && toolData.targetAmount && toolData.targetDate) {
-        const result = planGoal(toolData.targetAmount, toolData.targetDate);
-        return `План: ${result.monthly.toLocaleString()} ₸/мес, месяцев: ${result.months}`;
-      }
-      if (toolData.tool === 'match_product' && toolData.type && toolData.minAmount !== undefined) {
-        // Check if voice mode is enabled
-        const voiceEnabled = localStorage.getItem('voice_enabled') === 'true';
-        
-        if (voiceEnabled) {
-          // Voice mode: immediate redirect
-          const type = encodeURIComponent(toolData.type);
-          const min = Number(toolData.minAmount ?? 0);
-          const q = encodeURIComponent(toolData.query ?? "");
-          const url = `/products?type=${type}&min=${isNaN(min) ? 0 : min}&q=${q}`;
-          
-          console.log("Voice mode: redirecting to", url, toolData);
-          router.push(url);
-          return 'Перенаправляю в каталог продуктов...';
-        } else {
-          // Normal mode: show preview card
-          setProductPreview({
-            type: toolData.type,
-            minAmount: Number(toolData.minAmount ?? 0),
-            query: toolData.query ?? ""
-          });
-          return 'Подбор продукта';
-        }
-      }
-    } catch {
-      // Not a valid tool response, return original content
-    }
-    return content;
-  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;

@@ -11,7 +11,7 @@ import { VoiceController } from '../lib/voice';
 import { useChat } from './ChatContext';
 
 interface FabChatProps {
-  onVoiceCommand?: (message: string) => void;
+  onVoiceCommand?: (command: string) => void;
 }
 
 interface Message {
@@ -43,6 +43,19 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
     }
   }, [isOpen]);
 
+  // Manage body scroll when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Handle voice commands from global handler
   useEffect(() => {
     if (onVoiceCommand) {
@@ -53,49 +66,59 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input.trim(),
-      timestamp: Date.now()
-    };
-
-    addMessage(userMessage);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
 
-    try {
-      // Check for local goal extraction first
-      const goalData = extractGoal(currentInput);
-      if (goalData && goalData.amount) {
-        try {
-          // Save goal safely
-          saveGoal({ sum: goalData.amount, dateISO: goalData.dateISO });
-          
-          // Calculate monthly amount safely
-          const monthlyAmount = goalData.months ? Math.round(goalData.amount / goalData.months) : null;
-          
+    // Add user message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: currentInput,
+      timestamp: Date.now()
+    };
+    addMessage(userMessage);
+
+    // Check for goal extraction
+    const goal = extractGoal(currentInput);
+    if (goal && goal.amount > 0) {
+      if (goal.months || goal.dateISO) {
+        let targetDate = goal.dateISO;
+        if (!targetDate && goal.months) {
+          const d = new Date();
+          d.setMonth(d.getMonth() + goal.months);
+          targetDate = d.toISOString().split('T')[0];
+        }
+        
+        if (targetDate) {
+          const monthly = goal.amount / ((goal.months || 12) * 1.0);
           const assistantMessage: Message = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: `План накоплений: ${monthlyAmount ? monthlyAmount.toLocaleString() : 'не рассчитано'} ₸/мес · срок: ${goalData.months || 'не указан'} мес`,
+            content: `План накоплений: ${monthly.toLocaleString()} ₸/мес`,
             timestamp: Date.now() + 1
           };
           addMessage(assistantMessage);
-          track('goal_created', { 
-            sum: goalData.amount, 
-            dateISO: goalData.dateISO || undefined, 
-            monthly: monthlyAmount || 0, 
-            months: goalData.months || 0 
-          });
-          return;
-        } catch (error) {
-          console.warn('Error processing goal:', error);
+          
+          // Save goal
+          saveGoal({ sum: goal.amount, dateISO: targetDate });
+          track('goal_created', { sum: goal.amount, dateISO: targetDate, monthly });
         }
+      } else {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Укажите срок накоплений в месяцах или дату цели.',
+          timestamp: Date.now() + 1
+        };
+        addMessage(assistantMessage);
       }
+      
+      setIsLoading(false);
+      return;
+    }
 
-      // Send to API
+    try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -201,8 +224,7 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
         setIsListening(false);
       },
       (error) => {
-        console.error('Voice recognition error:', error);
-        alert(error);
+        console.error('Voice error:', error);
         setIsListening(false);
       }
     );
@@ -212,166 +234,169 @@ export function FabChat({ onVoiceCommand }: FabChatProps = {}) {
 
   return (
     <>
-             {/* FAB Button */}
-             <div className="fixed right-4 bottom-24 z-40">
-               <motion.button
-                 initial={{ scale: 0 }}
-                 animate={{ scale: 1 }}
-                 whileTap={{ scale: 0.95 }}
-                 onClick={() => setIsOpen(true)}
-                 aria-label="Открыть ассистента"
-                 className="size-14 rounded-full bg-[#2D9A86] text-white shadow-[0_8px_22px_rgba(5,71,58,.25)] ring-1 ring-emerald-200 active:scale-95 flex items-center justify-center"
-                 style={{ marginBottom: 'var(--safe-area-inset-bottom)' }}
-               >
-                 <span className="text-xl leading-none">💬</span>
-               </motion.button>
-             </div>
+      {/* FAB Button */}
+      <div className="fixed right-4 bottom-24 z-40">
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsOpen(true)}
+          aria-label="Открыть ассистента"
+          className="size-14 rounded-full bg-[#2D9A86] text-white shadow-[0_8px_22px_rgba(5,71,58,.25)] ring-1 ring-emerald-200 active:scale-95 flex items-center justify-center"
+          style={{ marginBottom: 'var(--safe-area-inset-bottom)' }}
+        >
+          <span className="text-xl leading-none">💬</span>
+        </motion.button>
+      </div>
 
-      {/* Mini Chat Bottom Sheet */}
-      <div className="fixed inset-x-0 bottom-0 z-50">
-        <div className={`mx-auto w-full max-w-screen-sm rounded-t-2xl bg-white shadow-xl max-h-[70vh] overflow-y-auto ring-1 ring-black/5 transition-transform duration-300 ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}>
-          {/* Header */}
-          <div className="sticky top-0 bg-white/95 backdrop-blur px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">ИИ ассистент</h3>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="rounded-full p-1.5 hover:bg-gray-100 active:scale-95"
-                aria-label="Закрыть"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="px-4 pt-3 pb-2 space-y-2 overflow-y-auto max-h-[50vh]">
-            {recentMessages.length === 0 ? (
-              <div className="text-center text-z-ink-2 py-8">
-                <MessageCircle size={32} className="mx-auto mb-2 opacity-50" />
-                <p>Задайте вопрос ассистенту</p>
-              </div>
-            ) : (
-              recentMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
-                      message.role === 'user'
-                        ? 'bg-[var(--z-green)] text-white'
-                        : 'bg-[var(--z-solar)]/50 text-z-ink'
-                    }`}
+      {/* Mini Chat Bottom Sheet - Only render when open */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Sheet */}
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="mx-auto w-full max-w-screen-sm rounded-t-2xl bg-white shadow-xl max-h-[70vh] overflow-y-auto ring-1 ring-black/5">
+              {/* Header */}
+              <div className="sticky top-0 bg-white/95 backdrop-blur px-4 py-3 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">ИИ ассистент</h3>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-full p-1.5 hover:bg-gray-100 active:scale-95"
+                    aria-label="Закрыть"
                   >
-                    {message.content}
-                  </div>
+                    ✕
+                  </button>
                 </div>
-              ))
-            )}
+              </div>
 
-            {/* Product Preview */}
-            {productPreview && (
-              <div className="bg-white border border-z-border rounded-xl p-4">
-                <h3 className="font-medium text-z-ink mb-2">Подбор продукта</h3>
-                <div className="space-y-2 text-sm mb-3">
-                  <div className="flex justify-between">
-                    <span className="text-z-ink-2">Тип:</span>
-                    <span className="font-medium text-z-ink">{productPreview.type}</span>
+              {/* Messages */}
+              <div className="px-4 pt-3 pb-2 space-y-2 overflow-y-auto max-h-[50vh]">
+                {recentMessages.length === 0 ? (
+                  <div className="text-center text-z-ink-2 py-8">
+                    <MessageCircle size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>Задайте вопрос ассистенту</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-z-ink-2">Минимальная сумма:</span>
-                    <span className="font-medium text-z-ink tabular-nums">{productPreview.minAmount.toLocaleString()} ₸</span>
+                ) : (
+                  recentMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
+                          message.role === 'user'
+                            ? 'bg-[var(--z-green)] text-white'
+                            : 'bg-[var(--z-solar)]/50 text-z-ink'
+                        }`}
+                      >
+                        {message.content}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* Product Preview */}
+                {productPreview && (
+                  <div className="bg-white border border-z-border rounded-xl p-4">
+                    <h3 className="font-medium text-z-ink mb-2">Подбор продукта</h3>
+                    <div className="space-y-2 text-sm mb-3">
+                      <div className="flex justify-between">
+                        <span className="text-z-ink-2">Тип:</span>
+                        <span className="font-medium text-z-ink">{productPreview.type}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-z-ink-2">Минимальная сумма:</span>
+                        <span className="font-medium text-z-ink tabular-nums">{productPreview.minAmount.toLocaleString()} ₸</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-z-ink-2">Поиск:</span>
+                        <span className="font-medium text-z-ink">{productPreview.query || 'Не указано'}</span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleProductMatch}
+                        className="flex-1 bg-[var(--z-green)] text-white rounded-xl py-2 text-sm font-medium"
+                      >
+                        Подобрать
+                      </button>
+                      <button
+                        onClick={() => setProductPreview(null)}
+                        className="flex-1 bg-z-muted text-z-ink-2 rounded-xl py-2 text-sm font-medium"
+                      >
+                        Изменить
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-z-ink-2">Поиск:</span>
-                    <span className="font-medium text-z-ink">{productPreview.query || 'Не указано'}</span>
+                )}
+
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-[var(--z-solar)]/50 text-z-ink px-3 py-2 rounded-2xl">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-z-ink-2 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-z-ink-2 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-z-ink-2 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+
+              {/* Input Area - Sticky at bottom */}
+              <div className="sticky bottom-0 bg-white/95 backdrop-blur px-3 py-3 border-t">
                 <div className="flex space-x-2">
-                  <button
-                    onClick={handleProductMatch}
-                    className="flex-1 bg-[var(--z-green)] text-white rounded-xl py-2 text-sm font-medium"
-                  >
-                    Подобрать
-                  </button>
-                  <button
-                    onClick={() => setProductPreview(null)}
-                    className="flex-1 bg-z-muted text-z-ink-2 rounded-xl py-2 text-sm font-medium"
-                  >
-                    Изменить
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Loading indicator */}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-[var(--z-solar)]/50 text-z-ink px-3 py-2 rounded-2xl">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-z-ink-2 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-z-ink-2 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-z-ink-2 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="flex-1 relative">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Введите сообщение..."
+                      className="w-full px-4 py-3 border border-z-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white text-sm"
+                    />
+                    <button
+                      onClick={handleVoiceToggle}
+                      className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
+                        isListening ? 'bg-red-500 text-white' : 'text-z-ink-2 hover:bg-z-muted'
+                      }`}
+                    >
+                      {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                    </button>
                   </div>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!input.trim() || isLoading}
+                    className="px-4 py-3 bg-[var(--z-green)] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+
+                {/* Full Chat Link */}
+                <div className="mt-3 text-center">
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      router.push('/assistant');
+                    }}
+                    className="text-[var(--z-green)] text-sm hover:text-[var(--z-green-600)]"
+                  >
+                    Открыть полноэкранный чат
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Input Area - Sticky at bottom */}
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur px-3 py-3 border-t">
-            <div className="flex space-x-2">
-              <div className="flex-1 relative">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Введите сообщение..."
-                  className="w-full px-4 py-3 border border-z-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--z-green)] focus:border-transparent bg-white text-sm"
-                />
-                <button
-                  onClick={handleVoiceToggle}
-                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${
-                    isListening ? 'bg-red-500 text-white' : 'text-z-ink-2 hover:bg-z-muted'
-                  }`}
-                >
-                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                </button>
-              </div>
-              <button
-                onClick={handleSendMessage}
-                disabled={!input.trim() || isLoading}
-                className="px-4 py-3 bg-[var(--z-green)] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send size={16} />
-              </button>
-            </div>
-
-            {/* Full Chat Link */}
-            <div className="mt-3 text-center">
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  router.push('/assistant');
-                }}
-                className="text-[var(--z-green)] text-sm hover:text-[var(--z-green-600)]"
-              >
-                Открыть полноэкранный чат
-              </button>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 z-40"
-          onClick={() => setIsOpen(false)}
-        />
       )}
     </>
   );
