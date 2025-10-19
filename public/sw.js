@@ -30,8 +30,8 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
         
-        // Otherwise fetch from network
-        return fetch(event.request).then((response) => {
+        // Otherwise fetch from network with redirect follow
+        return fetch(event.request, { redirect: 'follow' }).then((response) => {
           // Don't cache if not a valid response
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;

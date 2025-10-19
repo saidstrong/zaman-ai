@@ -57,7 +57,7 @@ export function ChartMini({ data, size = 120 }: ChartMiniProps) {
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center transform rotate-90">
           <div className="text-lg font-semibold text-z-ink tabular-nums">
-            {data.reduce((sum, item) => sum + item.value, 0).toLocaleString()} ₸
+            {(Array.isArray(data) ? data : []).reduce((sum, item) => sum + (item?.value || 0), 0).toLocaleString()} ₸
           </div>
           <div className="text-xs text-z-ink-2">Итого</div>
         </div>

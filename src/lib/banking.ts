@@ -16,7 +16,7 @@ export const accounts: Account[] = [
   { id:'acc-buf', name:'Буфер', balance: 50000, currency:'KZT', type:'buffer' }
 ];
 
-export const totalBalance = () => accounts.reduce((s,a)=>s+a.balance,0);
+export const totalBalance = () => (Array.isArray(accounts) ? accounts : []).reduce((s,a)=>s+a.balance,0);
 
 export type Envelope = { key: string; title: string; limit: number; type: 'fixed' | 'percent' };
 
@@ -148,7 +148,16 @@ export function getTransactions(): TransactionRecord[] {
   
   try {
     const existing = localStorage.getItem('transactions');
-    return existing ? JSON.parse(existing) : [];
+    if (!existing) return [];
+    
+    const parsed = JSON.parse(existing);
+    // Validate that parsed data is an array
+    if (!Array.isArray(parsed)) {
+      console.warn('Invalid transactions data found, returning empty array');
+      return [];
+    }
+    
+    return parsed;
   } catch (error) {
     console.error('Failed to load transactions:', error);
     return [];
@@ -157,8 +166,26 @@ export function getTransactions(): TransactionRecord[] {
 
 // Allocation engine
 export function calculateAllocation(plan: SalaryPlan): AllocationResult {
-  const total = plan.salary;
-  const otherSum = plan.other.reduce((sum, item) => sum + item.amount, 0);
+  // Add type guards
+  if (!plan || typeof plan !== 'object') {
+    return {
+      categories: {
+        rent: { amount: 0, percentage: 0 },
+        utilities: { amount: 0, percentage: 0 },
+        transport: { amount: 0, percentage: 0 },
+        food: { amount: 0, percentage: 0 },
+        savings: { amount: 0, percentage: 0 },
+        other: { amount: 0, percentage: 0 },
+        buffer: { amount: 0, percentage: 0 }
+      },
+      total: 0,
+      isValid: false,
+      error: 'Invalid salary plan provided.'
+    };
+  }
+
+  const total = plan.salary || 0;
+  const otherSum = (Array.isArray(plan.other) ? plan.other : []).reduce((sum, item) => sum + (item?.amount || 0), 0);
   const fixedSum = plan.rent + plan.utilities + plan.transport + plan.food + otherSum;
   const remainder = total - fixedSum;
 
@@ -213,7 +240,21 @@ export function getSalaryPlan(): SalaryPlan | null {
   
   try {
     const existing = localStorage.getItem('salary_plan');
-    return existing ? JSON.parse(existing) : null;
+    if (!existing) return null;
+    
+    const parsed = JSON.parse(existing);
+    // Validate that parsed data has required structure
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.salary !== 'number') {
+      console.warn('Invalid salary plan data found, returning null');
+      return null;
+    }
+    
+    // Ensure other is an array
+    if (!Array.isArray(parsed.other)) {
+      parsed.other = [];
+    }
+    
+    return parsed;
   } catch (error) {
     console.error('Failed to load salary plan:', error);
     return null;

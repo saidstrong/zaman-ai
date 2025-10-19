@@ -72,7 +72,7 @@ export default function AnalyticsPage() {
   };
 
   // Group events by type
-  const grouped = events.reduce((acc, event) => {
+  const grouped = (Array.isArray(events) ? events : []).reduce((acc, event) => {
     if (!acc[event.event]) {
       acc[event.event] = [];
     }

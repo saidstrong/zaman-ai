@@ -66,7 +66,7 @@ export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: 
   
   Object.keys(monthly).forEach(month => {
     const monthData = monthly[month];
-    const total = Object.values(monthData).reduce((sum, amount) => sum + amount, 0);
+    const total = Object.values(monthData || {}).reduce((sum, amount) => sum + (amount || 0), 0);
     
     const topCategories = Object.entries(monthData)
       .sort(([, a], [, b]) => b - a)
@@ -77,7 +77,7 @@ export function analyzeSpending(transactions: Transaction[], hasCategoryColumn: 
   });
   
   // Calculate total spending
-  const totalSpending = Object.values(totalsByCategory).reduce((sum, amount) => sum + amount, 0);
+  const totalSpending = Object.values(totalsByCategory || {}).reduce((sum, amount) => sum + (amount || 0), 0);
   
   // Generate advices
   const advices: string[] = [];
